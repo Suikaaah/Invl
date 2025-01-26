@@ -1,0 +1,19 @@
+procedure main()
+    list s
+    int n
+    call involution(s, n)
+
+procedure injective(list x, int y)
+    local int n = 0
+        from n = 0
+        do skip
+        loop
+            n += 1
+            y += 3
+        until n = 3
+    delocal int n = 3
+
+procedure involution(list x, int y)
+    call injective(x, y)
+    x[y] <=> x[y + 1]
+    uncall injective(x, y)
