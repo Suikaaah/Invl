@@ -93,13 +93,13 @@ impl Cvt for ProcId {
 impl Cvt for Program {
     fn cvt(&self) -> String {
         let Self(main, procs) = self;
-        let mut buf = "#include\"prelude.hpp\"\n".to_string();
+        let mut buf = "#include\"prelude.hpp\"\n\n".to_string();
 
         for proc in procs {
             buf += &format!("{}\n", proc.cvt_sig());
         }
 
-        buf += &format!("{}\n", main.cvt());
+        buf += &format!("\n{}\n", main.cvt());
 
         for proc in procs {
             buf += &format!("{}\n", proc.cvt());
@@ -130,13 +130,13 @@ impl Cvt for MainProc {
         for decl in decls {
             buf += &format!("{}{{}};\n", decl.cvt());
         }
-        buf += &statement.cvt();
+        buf += &format!("\n{}\n", statement.cvt());
 
         for decl in decls {
             buf += &format!("\nstd::cout << \"{0}: \" << {0} << '\\n';", decl.1.cvt());
         }
 
-        buf += "\n}";
+        buf += "\n}\n";
         buf
     }
 }
@@ -150,13 +150,13 @@ impl Cvt for Proc {
             buf += mem::replace(&mut delim, ", ");
             buf += &arg.cvt_ref();
         }
-        buf += &format!(") {{\n{}\n}}\nvoid {}_rev(", statement.cvt(), name.cvt());
+        buf += &format!(") {{\n{}\n}}\n\nvoid {}_rev(", statement.cvt(), name.cvt());
         delim = "";
         for arg in args {
             buf += mem::replace(&mut delim, ", ");
             buf += &arg.cvt_ref();
         }
-        buf += &format!(") {{\n{}\n}}", statement.reverse().cvt());
+        buf += &format!(") {{\n{}\n}}\n", statement.reverse().cvt());
         buf
     }
 }
