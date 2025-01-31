@@ -1,4 +1,4 @@
-use std::collections::LinkedList;
+use std::{collections::LinkedList, rc::Rc};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Type {
@@ -42,10 +42,22 @@ pub enum MutOp {
 }
 
 #[derive(Debug, Clone)]
-pub struct Variable(pub String);
+pub struct Variable(pub Rc<String>);
+
+impl Variable {
+    pub fn new(name: String) -> Self {
+        Self(Rc::new(name))
+    }
+}
 
 #[derive(Debug, Clone)]
-pub struct ProcId(pub String);
+pub struct ProcId(pub Rc<String>);
+
+impl ProcId {
+    pub fn new(name: String) -> Self {
+        Self(Rc::new(name))
+    }
+}
 
 #[derive(Debug)]
 pub struct Program(pub MainProc, pub LinkedList<Proc>);
@@ -71,6 +83,7 @@ pub enum Statement {
     Call(ProcId, LinkedList<Expr>),
     Uncall(ProcId, LinkedList<Expr>),
     Skip,
+    Print(Variable),
     Sequence(Box<Statement>, Box<Statement>),
 }
 
@@ -78,14 +91,14 @@ pub enum Statement {
 pub enum Expr {
     Const(i32),
     Variable(Variable),
-    Indexed(Variable, Box<Expr>),
-    BinOp(Box<Expr>, BinOp, Box<Expr>),
-    UnrOp(UnrOp, Box<Expr>),
+    Indexed(Variable, Rc<Expr>),
+    BinOp(Rc<Expr>, BinOp, Rc<Expr>),
+    UnrOp(UnrOp, Rc<Expr>),
     Empty(Variable),
     Top(Variable),
     Nil,
     Size(Variable),
-    Wrapped(Box<Expr>),
+    Wrapped(Rc<Expr>),
 }
 
 #[derive(Debug, Clone, Copy)]

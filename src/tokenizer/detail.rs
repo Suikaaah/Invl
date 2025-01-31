@@ -54,6 +54,7 @@ pub enum Token {
     Swap,
     Nil,
     Size,
+    Print,
 }
 
 impl Token {

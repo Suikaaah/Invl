@@ -8,7 +8,7 @@ use crate::{
     tokenizer::{detail::Token, TokenList},
 };
 use detail::Direction;
-use std::collections::LinkedList;
+use std::{collections::LinkedList, rc::Rc};
 
 #[derive(Debug)]
 pub struct Parser {
@@ -58,14 +58,14 @@ impl Parser {
 
     fn parse_variable(&mut self) -> Variable {
         match self.pop_front() {
-            Token::Name(x) => Variable(x),
+            Token::Name(x) => Variable::new(x),
             x => panic!("expected variable, found {x:?}"),
         }
     }
 
     fn parse_proc_id(&mut self) -> ProcId {
         match self.pop_front() {
-            Token::Name(x) => ProcId(x),
+            Token::Name(x) => ProcId::new(x),
             x => panic!("expected proc id, found {x:?}"),
         }
     }
@@ -123,12 +123,12 @@ impl Parser {
                     self.pop_assert(Token::RBracket);
                     let op = self.parse_mut_op();
                     let e_r = self.parse_expr(0);
-                    Statement::IndexedMut(Variable(x), e_l, op, e_r)
+                    Statement::IndexedMut(Variable::new(x), e_l, op, e_r)
                 }
                 _ => {
                     let op = self.parse_mut_op();
                     let e_r = self.parse_expr(0);
-                    Statement::Mut(Variable(x), op, e_r)
+                    Statement::Mut(Variable::new(x), op, e_r)
                 }
             },
             Token::If => {
@@ -202,6 +202,12 @@ impl Parser {
                 }
             }
             Token::Skip => Statement::Skip,
+            Token::Print => {
+                self.pop_assert(Token::LParen);
+                let x = self.parse_variable();
+                self.pop_assert(Token::RParen);
+                Statement::Print(x)
+            }
             x => panic!("expected statement, found {x:?}"),
         };
 
@@ -215,7 +221,8 @@ impl Parser {
                 | Token::Local
                 | Token::Call
                 | Token::Uncall
-                | Token::Skip,
+                | Token::Skip
+                | Token::Print,
             ) => Statement::Sequence(Box::new(first), Box::new(self.parse_statement())),
             _ => first,
         }
@@ -228,7 +235,7 @@ impl Parser {
             Token::LParen => {
                 let e = self.parse_expr(0);
                 self.pop_assert(Token::RParen);
-                Expr::Wrapped(Box::new(e))
+                Expr::Wrapped(Rc::new(e))
             }
             token @ (Token::Empty | Token::Top | Token::Size) => {
                 self.pop_assert(Token::LParen);
@@ -247,9 +254,9 @@ impl Parser {
                     self.pop_front();
                     let e = self.parse_expr(0);
                     self.pop_assert(Token::RBracket);
-                    Expr::Indexed(Variable(x), Box::new(e))
+                    Expr::Indexed(Variable::new(x), Rc::new(e))
                 } else {
-                    Expr::Variable(Variable(x))
+                    Expr::Variable(Variable::new(x))
                 }
             }
             token @ (Token::Exclamation | Token::Minus) => {
@@ -260,7 +267,7 @@ impl Parser {
                     _ => unreachable!(),
                 };
 
-                Expr::UnrOp(op, Box::new(e))
+                Expr::UnrOp(op, Rc::new(e))
             }
             x => panic!("invalid token: {x:?} {self:?}"),
         };
@@ -280,7 +287,7 @@ impl Parser {
 
             let second = self.parse_expr(next_min_prec);
 
-            first = Expr::BinOp(Box::new(first), op_detail.op, Box::new(second));
+            first = Expr::BinOp(Rc::new(first), op_detail.op, Rc::new(second));
         }
 
         first

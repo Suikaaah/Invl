@@ -67,6 +67,7 @@ impl Machine {
                 retval.insert(f(","), Token::Comma);
                 retval.insert(f("nil"), Token::Nil);
                 retval.insert(f("size"), Token::Size);
+                retval.insert(f("print"), Token::Print);
                 retval
             };
         }

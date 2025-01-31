@@ -5,7 +5,20 @@ use crate::parser::detail::{
     Variable,
 };
 use detail::Reverse;
-use std::mem;
+use std::{collections::LinkedList, mem};
+
+fn with_delim<T, F>(list: &LinkedList<T>, mut appender: F) -> String
+where
+    F: FnMut(&T) -> String,
+{
+    let mut buf = String::new();
+    let mut delim = "";
+    for x in list {
+        buf += mem::replace(&mut delim, ", ");
+        buf += &appender(x);
+    }
+    buf
+}
 
 pub trait Cvt {
     fn cvt(&self) -> String;
@@ -99,10 +112,10 @@ impl Cvt for Program {
             buf += &format!("{}\n", proc.cvt_sig());
         }
 
-        buf += &format!("\n{}\n", main.cvt());
+        buf += &format!("\n{}", main.cvt());
 
         for proc in procs {
-            buf += &format!("{}\n", proc.cvt());
+            buf += &format!("\n{}", proc.cvt());
         }
 
         buf
@@ -130,13 +143,7 @@ impl Cvt for MainProc {
         for decl in decls {
             buf += &format!("{}{{}};\n", decl.cvt());
         }
-        buf += &format!("\n{}\n", statement.cvt());
-
-        for decl in decls {
-            buf += &format!("\nstd::cout << \"{0}: \" << {0} << '\\n';", decl.1.cvt());
-        }
-
-        buf += "\n}\n";
+        buf += &format!("\n{}\n}}\n", statement.cvt());
         buf
     }
 }
@@ -145,17 +152,9 @@ impl Cvt for Proc {
     fn cvt(&self) -> String {
         let Self(name, args, statement) = self;
         let mut buf = format!("void {}_fwd(", name.cvt());
-        let mut delim = "";
-        for arg in args {
-            buf += mem::replace(&mut delim, ", ");
-            buf += &arg.cvt_ref();
-        }
+        buf += &with_delim(args, |arg| arg.cvt_ref());
         buf += &format!(") {{\n{}\n}}\n\nvoid {}_rev(", statement.cvt(), name.cvt());
-        delim = "";
-        for arg in args {
-            buf += mem::replace(&mut delim, ", ");
-            buf += &arg.cvt_ref();
-        }
+        buf += &with_delim(args, |arg| arg.cvt_ref());
         buf += &format!(") {{\n{}\n}}\n", statement.reverse().cvt());
         buf
     }
@@ -165,17 +164,9 @@ impl CvtSig for Proc {
     fn cvt_sig(&self) -> String {
         let Self(name, args, _) = self;
         let mut buf = format!("void {}_fwd(", name.cvt());
-        let mut delim = "";
-        for arg in args {
-            buf += mem::replace(&mut delim, ", ");
-            buf += &arg.cvt_ref();
-        }
+        buf += &with_delim(args, |arg| arg.cvt_ref());
         buf += &format!(");\nvoid {}_rev(", name.cvt());
-        delim = "";
-        for arg in args {
-            buf += mem::replace(&mut delim, ", ");
-            buf += &arg.cvt_ref();
-        }
+        buf += &with_delim(args, |arg| arg.cvt_ref());
         buf += ");";
         buf
     }
@@ -223,15 +214,12 @@ impl Cvt for Statement {
                     _ => unreachable!(),
                 };
                 let mut buf = format!("{}_{}(", q.cvt(), postfix);
-                let mut delim = "";
-                for arg in args {
-                    buf += mem::replace(&mut delim, ", ");
-                    buf += &arg.cvt();
-                }
+                buf += &with_delim(args, |arg| arg.cvt());
                 buf += ");";
                 buf
             }
             Self::Skip => String::new(),
+            Self::Print(x) => format!("print(\"{0}\", {0});", x.0),
             Self::Sequence(l, r) => format!("{}\n{}", l.cvt(), r.cvt()),
         }
     }

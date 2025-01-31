@@ -11,10 +11,9 @@ int main() {
     x1 += 5;
     x2 += 8;
     fib_rev(x1, x2, n);
-
-    std::cout << "x1: " << x1 << '\n';
-    std::cout << "x2: " << x2 << '\n';
-    std::cout << "n: " << n << '\n';
+    print("x1", x1);
+    print("x2", x2);
+    print("n", n);
 }
 
 void fib_fwd(int &x1, int &x2, int &n) {

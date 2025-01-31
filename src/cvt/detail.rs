@@ -35,6 +35,7 @@ impl Reverse for Statement {
             Self::Call(q, args) => Self::Uncall(q.clone(), args.clone()),
             Self::Uncall(q, args) => Self::Call(q.clone(), args.clone()),
             Self::Skip => Self::Skip,
+            Self::Print(x) => Self::Print(x.clone()),
             Self::Sequence(l, r) => Self::Sequence(Box::new(r.reverse()), Box::new(l.reverse())),
         }
     }
