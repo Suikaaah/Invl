@@ -4,7 +4,7 @@ use crate::parser::detail::{
     BinOp, Expr, MainProc, MutOp, Proc, ProcId, Program, Statement, Type, TypedVariable, UnrOp,
     Variable,
 };
-use detail::Reverse;
+use detail::Flip;
 use std::{collections::LinkedList, mem};
 
 fn with_delim<T, F>(list: &LinkedList<T>, mut appender: F) -> String
@@ -155,7 +155,7 @@ impl Cvt for Proc {
         buf += &with_delim(args, |arg| arg.cvt_ref());
         buf += &format!(") {{\n{}\n}}\n\nvoid {}_rev(", statement.cvt(), name.cvt());
         buf += &with_delim(args, |arg| arg.cvt_ref());
-        buf += &format!(") {{\n{}\n}}\n", statement.reverse().cvt());
+        buf += &format!(") {{\n{}\n}}\n", statement.flip().cvt());
         buf
     }
 }

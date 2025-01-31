@@ -184,11 +184,11 @@ impl Parser {
                 if !matches!(self.seek_front(), Token::RParen) {
                     loop {
                         args.push_back(self.parse_expr(0));
-                        match self.seek_front() {
-                            Token::Comma => {
-                                self.pop_front();
-                            }
-                            _ => break,
+
+                        if let Token::Comma = self.seek_front() {
+                            self.pop_front();
+                        } else {
+                            break;
                         }
                     }
                 }

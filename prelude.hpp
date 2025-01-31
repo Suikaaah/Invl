@@ -34,7 +34,7 @@ std::ostream &operator<<(std::ostream &os, const T &l) {
 }
 
 template <class T> void print(const char *name, const T &target) {
-    std::cout << name << ": " << S<T>::name() << " = " << target << "\n";
+    std::cout << name << ": " << S<T>::name() << " = " << target << '\n';
 }
 
 #endif
