@@ -1,24 +1,20 @@
-procedure main()
-    int x1
-    int x2
-    int n
-    
-    x1 += 5
-    x2 += 8
-    uncall fib(x1, x2, n)
-    
-    print(x1)
-    print(x2)
-    print(n)
+invl main()
+    array[3] target = [5, 2, 3]
+    array[3] key = [220, 159, 99]
+    array[3] temp = [0, 0, 0]
 
-procedure fib(int x1, int x2, int n)
-    if n = 0
-    then
-        x1 += 1
-        x2 += 1
-    else
-        n -= 1
-        call fib(x1, x2, n)
-        x1 += x2
-        x1 <=> x2
-    fi x1 = x2
+    print(target)
+    print(key)
+    print(temp)
+    with call crypt(target, key, temp)
+
+invl crypt(array[3] target, array[3] key, array[3] temp)
+    local int index = 0
+        from index = 0
+        do skip
+        loop
+            temp[index] += target[index] ^ key[index]
+            index += 1
+        until index = 3
+    delocal int index = 3
+    with temp <=> target

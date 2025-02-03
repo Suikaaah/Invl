@@ -138,31 +138,61 @@ impl CvtRef for TypedVariable {
 
 impl Cvt for MainProc {
     fn cvt(&self) -> String {
-        let Self(decls, statement) = self;
+        let Self(decls, statement, invl) = self;
         let mut buf = "int main() {\n".to_string();
-        for decl in decls {
-            buf += &format!("{}{{}};\n", decl.cvt());
+        for (t_x, e) in decls {
+            let rhs = e
+                .as_ref()
+                .map(|x| format!(" = {}", x.cvt()))
+                .unwrap_or("{}".to_string());
+            buf += &format!("{}{};\n", t_x.cvt(), rhs);
         }
-        buf += &format!("\n{}\n}}\n", statement.cvt());
+        buf += &format!("\n{}\n", statement.cvt());
+        buf += &format!("\n{}\n", invl.cvt());
+        buf += &format!("\n{}\n}}\n", statement.flip().cvt());
         buf
     }
 }
 
 impl Cvt for Proc {
     fn cvt(&self) -> String {
-        let Self(name, args, statement) = self;
-        let mut buf = format!("void {}_fwd(", name.cvt());
-        buf += &with_delim(args, |arg| arg.cvt_ref());
-        buf += &format!(") {{\n{}\n}}\n\nvoid {}_rev(", statement.cvt(), name.cvt());
-        buf += &with_delim(args, |arg| arg.cvt_ref());
-        buf += &format!(") {{\n{}\n}}\n", statement.flip().cvt());
+        let mut buf = String::new();
+
+        match self {
+            Self::Inj(name, args, statement) => {
+                buf += &format!("void {}_fwd(", name.cvt());
+                buf += &with_delim(args, |arg| arg.cvt_ref());
+                buf += &format!(") {{\n{}\n}}\n\nvoid {}_rev(", statement.cvt(), name.cvt());
+                buf += &with_delim(args, |arg| arg.cvt_ref());
+                buf += &format!(") {{\n{}\n}}\n", statement.flip().cvt());
+            }
+            Self::Invl(name, args, statement, invl) => {
+                buf += &format!("void {}_fwd(", name.cvt());
+                buf += &with_delim(args, |arg| arg.cvt_ref());
+                buf += &format!(
+                    ") {{\n{}\n\n{}\n\n{}\n}}\n\nvoid {}_rev(",
+                    statement.cvt(),
+                    invl.cvt(),
+                    statement.flip().cvt(),
+                    name.cvt(),
+                );
+                buf += &with_delim(args, |arg| arg.cvt_ref());
+                buf += &format!(
+                    ") {{\n{}\n\n{}\n\n{}\n}}\n",
+                    statement.cvt(),
+                    invl.cvt(),
+                    statement.flip().cvt(),
+                );
+            }
+        }
+
         buf
     }
 }
 
 impl CvtSig for Proc {
     fn cvt_sig(&self) -> String {
-        let Self(name, args, _) = self;
+        let (Self::Inj(name, args, _) | Self::Invl(name, args, _, _)) = self;
         let mut buf = format!("void {}_fwd(", name.cvt());
         buf += &with_delim(args, |arg| arg.cvt_ref());
         buf += &format!(");\nvoid {}_rev(", name.cvt());
@@ -230,6 +260,7 @@ impl Cvt for Expr {
         match self {
             Self::Const(x) => x.to_string(),
             Self::Variable(x) => x.cvt(),
+            Self::Array(x) => format!("{{{}}}", with_delim(x, |item| item.cvt())),
             Self::Indexed(x, e) => format!("{}[{}]", x.cvt(), e.cvt()),
             Self::BinOp(l, op, r) => format!("{} {} {}", l.cvt(), op.cvt(), r.cvt()),
             Self::UnrOp(op, x) => format!("{}{}", op.cvt(), x.cvt()),

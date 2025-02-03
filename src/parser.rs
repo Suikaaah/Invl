@@ -75,7 +75,7 @@ impl Parser {
     }
 
     fn parse_main_proc(&mut self) -> MainProc {
-        self.pop_assert(Token::Procedure);
+        self.pop_assert(Token::Invl);
         self.pop_assert(Token::Main);
         self.pop_assert(Token::LParen);
         self.pop_assert(Token::RParen);
@@ -83,15 +83,27 @@ impl Parser {
         let mut list = LinkedList::new();
 
         while matches!(self.seek_front(), Token::Int | Token::List | Token::Array) {
-            list.push_back(self.parse_typed_variable());
+            let t_x = self.parse_typed_variable();
+            if let Token::Equal = self.seek_front() {
+                self.pop_front();
+                list.push_back((t_x, Some(self.parse_expr(0))));
+            } else {
+                list.push_back((t_x, None));
+            }
         }
 
         let s = self.parse_statement();
-        MainProc(list, s)
+        self.pop_assert(Token::With);
+        let i = self.parse_invl();
+        MainProc(list, s, i)
     }
 
     fn parse_proc(&mut self) -> Proc {
-        self.pop_assert(Token::Procedure);
+        let either = match self.pop_front() {
+            token @ (Token::Invl | Token::Inj) => token,
+            x => panic!("expected either invl or inj, found {x:?}"),
+        };
+
         let q = self.parse_proc_id();
         self.pop_assert(Token::LParen);
 
@@ -111,7 +123,28 @@ impl Parser {
 
         self.pop_assert(Token::RParen);
         let s = self.parse_statement();
-        Proc(q, args, s)
+
+        match either {
+            Token::Inj => Proc::Inj(q, args, s),
+            Token::Invl => {
+                self.pop_assert(Token::With);
+                let i = self.parse_invl();
+                Proc::Invl(q, args, s, i)
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    fn parse_invl(&mut self) -> Statement {
+        match self.parse_statement() {
+            s @ (Statement::Mut(_, MutOp::Xor | MutOp::Swap, _)
+            | Statement::IndexedMut(_, _, MutOp::Xor | MutOp::Swap, _)
+            | Statement::Call(_, _)
+            | Statement::Uncall(_, _)
+            | Statement::Skip
+            | Statement::Print(_)) => s,
+            x => panic!("expected invl, found {x:?}"),
+        }
     }
 
     fn parse_statement(&mut self) -> Statement {
@@ -153,14 +186,14 @@ impl Parser {
             }
             token @ (Token::Push | Token::Pop) => {
                 self.pop_assert(Token::LParen);
-                let e_l = self.parse_expr(0);
+                let e = self.parse_expr(0);
                 self.pop_assert(Token::Comma);
-                let e_r = self.parse_expr(0);
+                let x = self.parse_variable();
                 self.pop_assert(Token::RParen);
 
                 match token {
-                    Token::Push => Statement::Push(e_l, e_r),
-                    Token::Pop => Statement::Pop(e_l, e_r),
+                    Token::Push => Statement::Push(e, x),
+                    Token::Pop => Statement::Pop(e, x),
                     _ => unreachable!(),
                 }
             }
@@ -236,6 +269,30 @@ impl Parser {
                 let e = self.parse_expr(0);
                 self.pop_assert(Token::RParen);
                 Expr::Wrapped(Rc::new(e))
+            }
+            Token::LBracket => {
+                let mut items = LinkedList::new();
+
+                if let Token::RBracket = self.seek_front() {
+                    self.pop_front();
+                    return Expr::Array(Rc::new(items));
+                }
+
+                loop {
+                    items.push_back(self.parse_expr(0));
+                    match self.seek_front() {
+                        Token::Comma => {
+                            self.pop_front();
+                        }
+                        Token::RBracket => {
+                            self.pop_front();
+                            break;
+                        }
+                        x => panic!("unexpected token found in array: {x:?}"),
+                    }
+                }
+
+                Expr::Array(Rc::new(items))
             }
             token @ (Token::Empty | Token::Top | Token::Size) => {
                 self.pop_assert(Token::LParen);

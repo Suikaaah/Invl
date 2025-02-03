@@ -11,7 +11,8 @@ pub enum Token {
     Int,
     List,
     Array,
-    Procedure,
+    Invl,
+    Inj,
     Main,
     Plus,
     Minus,
@@ -55,6 +56,7 @@ pub enum Token {
     Nil,
     Size,
     Print,
+    With,
 }
 
 impl Token {

@@ -24,7 +24,8 @@ impl Machine {
                 retval.insert(f("int"), Token::Int);
                 retval.insert(f("list"), Token::List);
                 retval.insert(f("array"), Token::Array);
-                retval.insert(f("procedure"), Token::Procedure);
+                retval.insert(f("invl"), Token::Invl);
+                retval.insert(f("inj"), Token::Inj);
                 retval.insert(f("main"), Token::Main);
                 retval.insert(f("+"), Token::Plus);
                 retval.insert(f("-"), Token::Minus);
@@ -68,6 +69,7 @@ impl Machine {
                 retval.insert(f("nil"), Token::Nil);
                 retval.insert(f("size"), Token::Size);
                 retval.insert(f("print"), Token::Print);
+                retval.insert(f("with"), Token::With);
                 retval
             };
         }

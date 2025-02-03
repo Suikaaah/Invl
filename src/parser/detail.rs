@@ -66,10 +66,17 @@ pub struct Program(pub MainProc, pub LinkedList<Proc>);
 pub struct TypedVariable(pub Type, pub Variable);
 
 #[derive(Debug)]
-pub struct MainProc(pub LinkedList<TypedVariable>, pub Statement);
+pub struct MainProc(
+    pub LinkedList<(TypedVariable, Option<Expr>)>,
+    pub Statement,
+    pub Statement,
+);
 
 #[derive(Debug)]
-pub struct Proc(pub ProcId, pub LinkedList<TypedVariable>, pub Statement);
+pub enum Proc {
+    Inj(ProcId, LinkedList<TypedVariable>, Statement),
+    Invl(ProcId, LinkedList<TypedVariable>, Statement, Statement),
+}
 
 #[derive(Debug)]
 pub enum Statement {
@@ -77,8 +84,8 @@ pub enum Statement {
     IndexedMut(Variable, Expr, MutOp, Expr),
     IfThenElseFi(Expr, Box<Statement>, Box<Statement>, Expr),
     FromDoLoopUntil(Expr, Box<Statement>, Box<Statement>, Expr),
-    Push(Expr, Expr),
-    Pop(Expr, Expr),
+    Push(Expr, Variable),
+    Pop(Expr, Variable),
     LocalDelocal(TypedVariable, Expr, Box<Statement>, TypedVariable, Expr),
     Call(ProcId, LinkedList<Expr>),
     Uncall(ProcId, LinkedList<Expr>),
@@ -91,6 +98,7 @@ pub enum Statement {
 pub enum Expr {
     Const(i32),
     Variable(Variable),
+    Array(Rc<LinkedList<Expr>>),
     Indexed(Variable, Rc<Expr>),
     BinOp(Rc<Expr>, BinOp, Rc<Expr>),
     UnrOp(UnrOp, Rc<Expr>),
