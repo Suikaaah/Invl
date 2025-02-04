@@ -50,9 +50,9 @@ impl CvtMutOp for MutOp {
 impl Cvt for Type {
     fn cvt(&self) -> String {
         match self {
-            Self::Int => "int".to_string(),
-            Self::Array(n) => format!("std::array<int, {n}>"),
-            Self::List => "std::deque<int>".to_string(),
+            Self::Int => "Int".to_string(),
+            Self::Array(n) => format!("Array<{n}>"),
+            Self::List => "List".to_string(),
         }
     }
 }
@@ -266,7 +266,7 @@ impl Cvt for Expr {
             Self::UnrOp(op, x) => format!("{}{}", op.cvt(), x.cvt()),
             Self::Empty(x) => format!("{}.empty()", x.cvt()),
             Self::Top(x) => format!("{}.front()", x.cvt()),
-            Self::Nil => "std::deque<int>{}".to_string(),
+            Self::Nil => "List{}".to_string(),
             Self::Size(x) => format!("{}.size()", x.cvt()),
             Self::Wrapped(x) => format!("({})", x.cvt()),
         }

@@ -7,19 +7,24 @@
 #include <iostream>
 #include <string>
 
+using Int = int;
+using List = std::deque<int>;
+template <std::size_t N>
+using Array = std::array<int, N>;
+
 template <class> struct S;
 
-template <> struct S<std::deque<int>> {
+template <> struct S<List> {
     using Vp = void *;
     static const char *name() { return "list"; }
 };
 
-template <std::size_t N> struct S<std::array<int, N>> {
+template <std::size_t N> struct S<Array<N>> {
     using Vp = void *;
     static std::string name() { return "array[" + std::to_string(N) + "]"; }
 };
 
-template <> struct S<int> {
+template <> struct S<Int> {
     static const char *name() { return "int"; }
 };
 

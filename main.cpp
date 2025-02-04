@@ -1,14 +1,12 @@
 #include "prelude.hpp"
 
-void crypt_fwd(std::array<int, 3> &target, std::array<int, 3> &key,
-               std::array<int, 3> &temp);
-void crypt_rev(std::array<int, 3> &target, std::array<int, 3> &key,
-               std::array<int, 3> &temp);
+void crypt_fwd(Array<3> &target, Array<3> &key, Array<3> &temp);
+void crypt_rev(Array<3> &target, Array<3> &key, Array<3> &temp);
 
 int main() {
-    std::array<int, 3> target = {217, 157, 96};
-    std::array<int, 3> key = {220, 159, 99};
-    std::array<int, 3> temp = {0, 0, 0};
+    Array<3> target = {5, 2, 3};
+    Array<3> key = {220, 159, 99};
+    Array<3> temp = {0, 0, 0};
 
     print("target", target);
     print("key", key);
@@ -21,10 +19,9 @@ int main() {
     print("target", target);
 }
 
-void crypt_fwd(std::array<int, 3> &target, std::array<int, 3> &key,
-               std::array<int, 3> &temp) {
+void crypt_fwd(Array<3> &target, Array<3> &key, Array<3> &temp) {
     {
-        int index = 0;
+        Int index = 0;
         assert(index == 0);
 
         while (!(index == 3)) {
@@ -38,7 +35,7 @@ void crypt_fwd(std::array<int, 3> &target, std::array<int, 3> &key,
     std::swap(temp, target);
 
     {
-        int index = 3;
+        Int index = 3;
         assert(index == 3);
 
         while (!(index == 0)) {
@@ -50,10 +47,9 @@ void crypt_fwd(std::array<int, 3> &target, std::array<int, 3> &key,
     }
 }
 
-void crypt_rev(std::array<int, 3> &target, std::array<int, 3> &key,
-               std::array<int, 3> &temp) {
+void crypt_rev(Array<3> &target, Array<3> &key, Array<3> &temp) {
     {
-        int index = 0;
+        Int index = 0;
         assert(index == 0);
 
         while (!(index == 3)) {
@@ -67,7 +63,7 @@ void crypt_rev(std::array<int, 3> &target, std::array<int, 3> &key,
     std::swap(temp, target);
 
     {
-        int index = 3;
+        Int index = 3;
         assert(index == 3);
 
         while (!(index == 0)) {
