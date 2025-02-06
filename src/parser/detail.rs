@@ -50,7 +50,7 @@ impl Variable {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ProcId(pub Rc<String>);
 
 impl ProcId {
