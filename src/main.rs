@@ -22,6 +22,7 @@ fn main() {
             .output()
     } else if cfg!(target_os = "linux") {
         Command::new("sh")
+            .arg("-c")
             .arg(include_str!("../command_linux"))
             .output()
     } else {
@@ -30,5 +31,5 @@ fn main() {
     .expect("come on")
     .stdout;
 
-    println!("{}", String::from_utf8(output).expect("invalid utf8"));
+    print!("{}", String::from_utf8(output).expect("invalid utf8"));
 }
