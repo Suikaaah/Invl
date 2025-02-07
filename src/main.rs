@@ -6,7 +6,10 @@ mod tokenizer;
 use checker::Checker;
 use cvt::Cvt;
 use parser::Parser;
-use std::{fs, process::Command};
+use std::{
+    fs,
+    process::{Command, Output},
+};
 use tokenizer::Tokenizer;
 
 fn main() {
@@ -16,7 +19,7 @@ fn main() {
     Checker::check(&program);
     fs::write("main.cpp", program.cvt()).expect("come on");
 
-    let output = if cfg!(target_os = "windows") {
+    let Output { stdout, stderr, .. } = if cfg!(target_os = "windows") {
         Command::new("powershell")
             .arg(include_str!("../command_windows"))
             .output()
@@ -28,8 +31,12 @@ fn main() {
     } else {
         unimplemented!("mac?")
     }
-    .expect("come on")
-    .stdout;
+    .expect("come on");
 
-    print!("{}", String::from_utf8(output).expect("invalid utf8"));
+    let convert = |v| String::from_utf8(v).expect("invalid utf8");
+    let stdout = convert(stdout);
+    let stderr = convert(stderr);
+
+    print!("STDERR:\n{stderr}");
+    print!("STDOUT:\n{stdout}");
 }
