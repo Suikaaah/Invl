@@ -7,8 +7,18 @@ use crate::parser::detail::{
 use detail::{concat, Flip};
 use std::mem;
 
+const INDENT_WIDTH: usize = 4;
+
+fn indent(depth: usize) -> String {
+    (0..INDENT_WIDTH * depth).map(|_| ' ').collect()
+}
+
 pub trait Cvt {
     fn cvt(&self) -> String;
+}
+
+trait CvtInd {
+    fn cvt_ind(&self, depth: usize) -> String;
 }
 
 trait CvtRef {
@@ -93,7 +103,7 @@ impl Cvt for ProcId {
 impl Cvt for Program {
     fn cvt(&self) -> String {
         let Self(main, procs) = self;
-        let mut buf = "#include\"prelude.hpp\"\n\n".to_string();
+        let mut buf = "#include \"prelude.hpp\"\n\n".to_string();
 
         for proc in procs {
             buf += &format!("{}\n", proc.cvt_sig());
@@ -127,16 +137,17 @@ impl Cvt for MainProc {
     fn cvt(&self) -> String {
         let Self(decls, statement, invl) = self;
         let mut buf = "int main() {\n".to_string();
+        let spaces = indent(1);
         for (t_x, e) in decls {
             let rhs = e
                 .as_ref()
                 .map(|x| format!(" = {}", x.cvt()))
                 .unwrap_or("{}".to_string());
-            buf += &format!("{}{};\n", t_x.cvt(), rhs);
+            buf += &format!("{spaces}{}{};\n", t_x.cvt(), rhs);
         }
-        buf += &format!("\n{}\n", statement.cvt());
-        buf += &format!("\n{}\n", invl.cvt());
-        buf += &format!("\n{}\n}}\n", statement.flip().cvt());
+        buf += &format!("\n{}", statement.cvt_ind(1));
+        buf += &format!("\n{}", invl.cvt_ind(1));
+        buf += &format!("\n{}}}\n", statement.flip().cvt_ind(1));
         buf
     }
 }
@@ -149,17 +160,21 @@ impl Cvt for Proc {
             Self::Inj(name, args, statement) => {
                 buf += &format!("void {}_fwd(", name.cvt());
                 buf += &concat(args, ", ", |arg| arg.cvt_ref());
-                buf += &format!(") {{\n{}\n}}\n\nvoid {}_rev(", statement.cvt(), name.cvt());
+                buf += &format!(
+                    ") {{\n{}}}\n\nvoid {}_rev(",
+                    statement.cvt_ind(1),
+                    name.cvt()
+                );
                 buf += &concat(args, ", ", |arg| arg.cvt_ref());
-                buf += &format!(") {{\n{}\n}}\n", statement.flip().cvt());
+                buf += &format!(") {{\n{}}}\n", statement.flip().cvt_ind(1));
             }
             Self::Invl(name, args, statement, invl) => {
                 let body = concat(args, ", ", |arg| arg.cvt_ref())
                     + &format!(
-                        ") {{\n{}\n\n{}\n\n{}\n}}\n",
-                        statement.cvt(),
-                        invl.cvt(),
-                        statement.flip().cvt(),
+                        ") {{\n{}\n{}\n{}}}\n",
+                        statement.cvt_ind(1),
+                        invl.cvt_ind(1),
+                        statement.flip().cvt_ind(1),
                     );
 
                 buf += &format!("void {}_fwd(", name.cvt());
@@ -173,13 +188,14 @@ impl Cvt for Proc {
                     .collect();
 
                 let mut body = concat(&args, ", ", |arg| format!("Int& {}", arg('v'))) + ") {\n";
+                let spaces = indent(1);
 
                 for arg in &args {
-                    body += &format!("Int {} = {};\n", arg('c'), arg('v'));
+                    body += &format!("{spaces}Int {} = {};\n", arg('c'), arg('v'));
                 }
 
                 for (i, arg) in args.iter().enumerate() {
-                    body += &format!("{} = ", arg('v'));
+                    body += &format!("{spaces}{} = ", arg('v'));
 
                     let mut delim = "";
                     for (j, var) in args.iter().enumerate() {
@@ -223,38 +239,42 @@ impl CvtSig for Proc {
     }
 }
 
-impl Cvt for Statement {
-    fn cvt(&self) -> String {
+impl CvtInd for Statement {
+    fn cvt_ind(&self, depth: usize) -> String {
+        let spaces = indent(depth);
+        let more_spaces = indent(depth + 1);
+
         match self {
-            Self::Mut(x, op, e) => op.cvt_mut_op(&x.cvt(), &e.cvt()),
+            Self::Mut(x, op, e) => spaces + &op.cvt_mut_op(&x.cvt(), &e.cvt()) + "\n",
             Self::IndexedMut(x, i, op, e) => {
-                op.cvt_mut_op(&format!("{}[{}]", x.cvt(), i.cvt()), &e.cvt())
+                op.cvt_mut_op(&format!("{spaces}{}[{}]", x.cvt(), i.cvt()), &e.cvt()) + "\n"
             }
             Self::IfThenElseFi(e_l, s_l, s_r, e_r) => format!(
-                "if ({0}) {{\n{1}\nassert({3});\n}} else {{\n{2}\nassert(!({3}));\n}}",
+                "{spaces}if ({0}) {{\n{1}{more_spaces}assert({3});\n{spaces}}} else {{\n{2}{more_spaces}assert(!({3}));\n{spaces}}}\n",
                 e_l.cvt(),
-                s_l.cvt(),
-                s_r.cvt(),
+                s_l.cvt_ind(depth + 1),
+                s_r.cvt_ind(depth + 1),
                 e_r.cvt()
             ),
             Self::FromDoLoopUntil(e_l, s_l, s_r, e_r) => format!(
-                "assert({0});\n{1}\nwhile (!({3})) {{\n{2}\nassert(!({0}));\n{1}\n}}",
+                "{spaces}assert({0});\n{1}{spaces}while (!({3})) {{\n{2}{more_spaces}assert(!({0}));\n{4}{spaces}}}\n",
                 e_l.cvt(),
-                s_l.cvt(),
-                s_r.cvt(),
-                e_r.cvt()
+                s_l.cvt_ind(depth),
+                s_r.cvt_ind(depth + 1),
+                e_r.cvt(),
+                s_l.cvt_ind(depth + 1),
             ),
-            Self::Push(l, r) => format!("{0}.push_front({1});\n{1} = 0;", r.cvt(), l.cvt()),
+            Self::Push(l, r) => format!("{spaces}{0}.push_front({1});\n{spaces}{1} = 0;\n", r.cvt(), l.cvt()),
             Self::Pop(l, r) => format!(
-                "assert({1} == 0);\n{1} = {0}.front();\n{0}.pop_front();",
+                "{spaces}assert({1} == 0);\n{spaces}{1} = {0}.front();\n{spaces}{0}.pop_front();\n",
                 r.cvt(),
                 l.cvt()
             ),
             Self::LocalDelocal(tx_l, e_l, s, tx_r, e_r) => format!(
-                "{{\n{} = {};\n{}\nassert({} == {});\n}}",
+                "{spaces}{{\n{more_spaces}{} = {};\n{}{more_spaces}assert({} == {});\n{spaces}}}\n",
                 tx_l.cvt(),
                 e_l.cvt(),
-                s.cvt(),
+                s.cvt_ind(depth + 1),
                 tx_r.1.cvt(),
                 e_r.cvt()
             ),
@@ -264,14 +284,14 @@ impl Cvt for Statement {
                     Self::Uncall(_, _) => "rev",
                     _ => unreachable!(),
                 };
-                let mut buf = format!("{}_{}(", q.cvt(), postfix);
+                let mut buf = format!("{spaces}{}_{}(", q.cvt(), postfix);
                 buf += &concat(args, ", ", |arg| arg.cvt());
-                buf += ");";
+                buf += ");\n";
                 buf
             }
             Self::Skip => String::new(),
-            Self::Print(x) => format!("print(\"{0}\", {0});", x.0),
-            Self::Sequence(l, r) => format!("{}\n{}", l.cvt(), r.cvt()),
+            Self::Print(x) => format!("{spaces}print(\"{0}\", {0});\n", x.0),
+            Self::Sequence(l, r) => format!("{}{}", l.cvt_ind(depth), r.cvt_ind(depth)),
         }
     }
 }

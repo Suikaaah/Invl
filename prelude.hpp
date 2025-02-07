@@ -8,37 +8,34 @@
 #include <string>
 
 using Int = int;
-using List = std::deque<int>;
+using List = std::deque<Int>;
 template <std::size_t N>
-using Array = std::array<int, N>;
+using Array = std::array<Int, N>;
 
 template <class> struct S;
-
 template <> struct S<List> {
-    using Vp = void *;
-    static const char *name() { return "list"; }
+    using Vp = void*;
+    static const char* name() { return "list"; }
 };
-
 template <std::size_t N> struct S<Array<N>> {
-    using Vp = void *;
+    using Vp = void*;
     static std::string name() { return "array[" + std::to_string(N) + "]"; }
 };
-
 template <> struct S<Int> {
-    static const char *name() { return "int"; }
+    static const char* name() { return "int"; }
 };
 
-template <class T, S<T>::Vp = nullptr>
-std::ostream &operator<<(std::ostream &os, const T &l) {
+template <class T, typename S<T>::Vp = nullptr>
+std::ostream& operator<<(std::ostream& os, const T& l) {
     os << '[';
-    const char *delim = "";
-    for (auto &x : l) {
+    const char* delim = "";
+    for (const auto& x : l) {
         os << std::exchange(delim, ", ") << x;
     }
     return os << ']';
 }
 
-template <class T> void print(const char *name, const T &target) {
+template <class T> void print(const char* name, const T& target) {
     std::cout << name << ": " << S<T>::name() << " = " << target << '\n';
 }
 
