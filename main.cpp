@@ -18,25 +18,25 @@ int main() {
 }
 
 void test_fwd(Int &v0, Int &v1, Int &v2, Int &v3) {
-    Int v0_copied = v0;
-    Int v1_copied = v1;
-    Int v2_copied = v2;
-    Int v3_copied = v3;
-    v0 = 0 * v0_copied + 0 * v1_copied + 1 * v2_copied + 0 * v3_copied;
-    v1 = 0 * v0_copied + 0 * v1_copied + 0 * v2_copied + 1 * v3_copied;
-    v2 = 1 * v0_copied + 0 * v1_copied + 0 * v2_copied + 0 * v3_copied;
-    v3 = 0 * v0_copied + 1 * v1_copied + 0 * v2_copied + 0 * v3_copied;
+    Int c0 = v0;
+    Int c1 = v1;
+    Int c2 = v2;
+    Int c3 = v3;
+    v0 = 0 * c0 + 0 * c1 + 1 * c2 + 0 * c3;
+    v1 = 0 * c0 + 0 * c1 + 0 * c2 + 1 * c3;
+    v2 = 1 * c0 + 0 * c1 + 0 * c2 + 0 * c3;
+    v3 = 0 * c0 + 1 * c1 + 0 * c2 + 0 * c3;
 }
 
 void test_rev(Int &v0, Int &v1, Int &v2, Int &v3) {
-    Int v0_copied = v0;
-    Int v1_copied = v1;
-    Int v2_copied = v2;
-    Int v3_copied = v3;
-    v0 = 0 * v0_copied + 0 * v1_copied + 1 * v2_copied + 0 * v3_copied;
-    v1 = 0 * v0_copied + 0 * v1_copied + 0 * v2_copied + 1 * v3_copied;
-    v2 = 1 * v0_copied + 0 * v1_copied + 0 * v2_copied + 0 * v3_copied;
-    v3 = 0 * v0_copied + 1 * v1_copied + 0 * v2_copied + 0 * v3_copied;
+    Int c0 = v0;
+    Int c1 = v1;
+    Int c2 = v2;
+    Int c3 = v3;
+    v0 = 0 * c0 + 0 * c1 + 1 * c2 + 0 * c3;
+    v1 = 0 * c0 + 0 * c1 + 0 * c2 + 1 * c3;
+    v2 = 1 * c0 + 0 * c1 + 0 * c2 + 0 * c3;
+    v3 = 0 * c0 + 1 * c1 + 0 * c2 + 0 * c3;
 }
 
 void f_fwd(Int &x, Int &y) {

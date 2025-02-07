@@ -168,18 +168,23 @@ impl Cvt for Proc {
                 buf += &body;
             }
             Self::Mat(name, mat) => {
-                let args: Vec<String> = (0..mat.size).map(|i| format!("v{i}")).collect();
-                let mut body = concat(&args, ", ", |arg| format!("Int& {arg}")) + ") {\n";
+                let args: Vec<_> = (0..mat.size)
+                    .map(|i| Box::new(move |c| format!("{c}{i}")) as Box<dyn Fn(char) -> String>)
+                    .collect();
+
+                let mut body = concat(&args, ", ", |arg| format!("Int& {}", arg('v'))) + ") {\n";
+
                 for arg in &args {
-                    body += &format!("Int {arg}_copied = {arg};\n");
+                    body += &format!("Int {} = {};\n", arg('c'), arg('v'));
                 }
+
                 for (i, arg) in args.iter().enumerate() {
-                    body += &format!("{arg} = ");
+                    body += &format!("{} = ", arg('v'));
 
                     let mut delim = "";
                     for (j, var) in args.iter().enumerate() {
                         body += mem::replace(&mut delim, " + ");
-                        body += &format!("{} * {var}_copied", mat.get(i, j));
+                        body += &format!("{} * {}", mat.get(i, j), var('c'));
                     }
                     body += ";\n";
                 }
