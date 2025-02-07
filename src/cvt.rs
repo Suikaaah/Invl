@@ -1,12 +1,11 @@
 mod detail;
 
-use std::mem;
-
 use crate::parser::detail::{
     BinOp, Expr, MainProc, MutOp, Proc, ProcId, Program, Statement, Type, TypedVariable, UnrOp,
     Variable,
 };
 use detail::{concat, Flip};
+use std::mem;
 
 pub trait Cvt {
     fn cvt(&self) -> String;

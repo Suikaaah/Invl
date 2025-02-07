@@ -1,5 +1,5 @@
 invl main()
-    array[4] a = [1, 2, 3, 4]
+    array[4] a = [-12, 23, -13, 7]
     print(a)
 with
     call g(a)
