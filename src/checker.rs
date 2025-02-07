@@ -14,8 +14,7 @@ pub struct Checker {
 
 impl Checker {
     pub fn check(program: &Program) {
-        let checker = Self::new(program);
-        checker.check_program(program);
+        Self::new(program).check_program(program);
     }
 
     fn new(program: &Program) -> Self {
@@ -24,7 +23,9 @@ impl Checker {
         for proc in procs {
             match proc {
                 Proc::Inj(id, _, _) => types.insert(id.clone(), ProcType::Inj),
-                Proc::Invl(id, _, _, _) => types.insert(id.clone(), ProcType::Invl),
+                Proc::Invl(id, _, _, _) | Proc::Mat(id, _) => {
+                    types.insert(id.clone(), ProcType::Invl)
+                }
             };
         }
         Self { types }

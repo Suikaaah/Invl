@@ -57,6 +57,7 @@ pub enum Token {
     Size,
     Print,
     With,
+    Semicolon,
 }
 
 impl Token {
@@ -116,6 +117,7 @@ impl IsSymbol for char {
                 | '>'
                 | '='
                 | '!'
+                | ';'
         )
     }
 }

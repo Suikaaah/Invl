@@ -1,24 +1,12 @@
 mod detail;
 
+use std::mem;
+
 use crate::parser::detail::{
     BinOp, Expr, MainProc, MutOp, Proc, ProcId, Program, Statement, Type, TypedVariable, UnrOp,
     Variable,
 };
-use detail::Flip;
-use std::{collections::LinkedList, mem};
-
-fn with_delim<T, F>(list: &LinkedList<T>, mut appender: F) -> String
-where
-    F: FnMut(&T) -> String,
-{
-    let mut buf = String::new();
-    let mut delim = "";
-    for x in list {
-        buf += mem::replace(&mut delim, ", ");
-        buf += &appender(x);
-    }
-    buf
-}
+use detail::{concat, Flip};
 
 pub trait Cvt {
     fn cvt(&self) -> String;
@@ -161,28 +149,47 @@ impl Cvt for Proc {
         match self {
             Self::Inj(name, args, statement) => {
                 buf += &format!("void {}_fwd(", name.cvt());
-                buf += &with_delim(args, |arg| arg.cvt_ref());
+                buf += &concat(args, ", ", |arg| arg.cvt_ref());
                 buf += &format!(") {{\n{}\n}}\n\nvoid {}_rev(", statement.cvt(), name.cvt());
-                buf += &with_delim(args, |arg| arg.cvt_ref());
+                buf += &concat(args, ", ", |arg| arg.cvt_ref());
                 buf += &format!(") {{\n{}\n}}\n", statement.flip().cvt());
             }
             Self::Invl(name, args, statement, invl) => {
+                let body = concat(args, ", ", |arg| arg.cvt_ref())
+                    + &format!(
+                        ") {{\n{}\n\n{}\n\n{}\n}}\n",
+                        statement.cvt(),
+                        invl.cvt(),
+                        statement.flip().cvt(),
+                    );
+
                 buf += &format!("void {}_fwd(", name.cvt());
-                buf += &with_delim(args, |arg| arg.cvt_ref());
-                buf += &format!(
-                    ") {{\n{}\n\n{}\n\n{}\n}}\n\nvoid {}_rev(",
-                    statement.cvt(),
-                    invl.cvt(),
-                    statement.flip().cvt(),
-                    name.cvt(),
-                );
-                buf += &with_delim(args, |arg| arg.cvt_ref());
-                buf += &format!(
-                    ") {{\n{}\n\n{}\n\n{}\n}}\n",
-                    statement.cvt(),
-                    invl.cvt(),
-                    statement.flip().cvt(),
-                );
+                buf += &body;
+                buf += &format!("\nvoid {}_rev(", name.cvt());
+                buf += &body;
+            }
+            Self::Mat(name, mat) => {
+                let args: Vec<String> = (0..mat.size).map(|i| format!("v{i}")).collect();
+                let mut body = concat(&args, ", ", |arg| format!("Int& {arg}")) + ") {\n";
+                for arg in &args {
+                    body += &format!("Int {arg}_copied = {arg};\n");
+                }
+                for (i, arg) in args.iter().enumerate() {
+                    body += &format!("{arg} = ");
+
+                    let mut delim = "";
+                    for (j, var) in args.iter().enumerate() {
+                        body += mem::replace(&mut delim, " + ");
+                        body += &format!("{} * {var}_copied", mat.get(i, j));
+                    }
+                    body += ";\n";
+                }
+                body += "}\n";
+
+                buf += &format!("void {}_fwd(", name.cvt());
+                buf += &body;
+                buf += &format!("\nvoid {}_rev(", name.cvt());
+                buf += &body;
             }
         }
 
@@ -192,11 +199,21 @@ impl Cvt for Proc {
 
 impl CvtSig for Proc {
     fn cvt_sig(&self) -> String {
-        let (Self::Inj(name, args, _) | Self::Invl(name, args, _, _)) = self;
+        let hello = match self {
+            Self::Inj(_, args, _) | Self::Invl(_, args, _, _) => {
+                concat(args, ", ", |arg| arg.cvt_ref())
+            }
+            Self::Mat(_, mat) => {
+                let args: Vec<String> = (0..mat.size).map(|i| format!("v{i}")).collect();
+                concat(&args, ", ", |arg| format!("Int& {arg}"))
+            }
+        };
+
+        let (Self::Inj(name, _, _) | Self::Invl(name, _, _, _) | Self::Mat(name, _)) = self;
         let mut buf = format!("void {}_fwd(", name.cvt());
-        buf += &with_delim(args, |arg| arg.cvt_ref());
+        buf += &hello;
         buf += &format!(");\nvoid {}_rev(", name.cvt());
-        buf += &with_delim(args, |arg| arg.cvt_ref());
+        buf += &hello;
         buf += ");";
         buf
     }
@@ -244,7 +261,7 @@ impl Cvt for Statement {
                     _ => unreachable!(),
                 };
                 let mut buf = format!("{}_{}(", q.cvt(), postfix);
-                buf += &with_delim(args, |arg| arg.cvt());
+                buf += &concat(args, ", ", |arg| arg.cvt());
                 buf += ");";
                 buf
             }
@@ -260,7 +277,7 @@ impl Cvt for Expr {
         match self {
             Self::Const(x) => x.to_string(),
             Self::Variable(x) => x.cvt(),
-            Self::Array(x) => format!("{{{}}}", with_delim(x, |item| item.cvt())),
+            Self::Array(x) => format!("{{{}}}", concat(x.as_ref(), ", ", |item| item.cvt())),
             Self::Indexed(x, e) => format!("{}[{}]", x.cvt(), e.cvt()),
             Self::BinOp(l, op, r) => format!("{} {} {}", l.cvt(), op.cvt(), r.cvt()),
             Self::UnrOp(op, x) => format!("{}{}", op.cvt(), x.cvt()),

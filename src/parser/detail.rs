@@ -1,3 +1,4 @@
+use crate::parser::mat::InvlMat;
 use std::{collections::LinkedList, rc::Rc};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -76,6 +77,7 @@ pub struct MainProc(
 pub enum Proc {
     Inj(ProcId, LinkedList<TypedVariable>, Statement),
     Invl(ProcId, LinkedList<TypedVariable>, Statement, Statement),
+    Mat(ProcId, InvlMat),
 }
 
 #[derive(Debug)]

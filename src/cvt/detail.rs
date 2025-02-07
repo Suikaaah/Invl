@@ -1,4 +1,5 @@
 use crate::parser::detail::{MutOp, Statement};
+use std::mem;
 
 pub trait Flip {
     fn flip(&self) -> Self;
@@ -50,4 +51,19 @@ impl Flip for MutOp {
             Self::Swap => Self::Swap,
         }
     }
+}
+
+pub fn concat<'a, T, I, F>(list: I, delim: &str, mut converter: F) -> String
+where
+    T: 'a,
+    I: IntoIterator<Item = &'a T>,
+    F: FnMut(&T) -> String,
+{
+    let mut buf = String::new();
+    let mut d = "";
+    for x in list {
+        buf += mem::replace(&mut d, delim);
+        buf += &converter(x);
+    }
+    buf
 }

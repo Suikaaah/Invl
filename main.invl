@@ -1,20 +1,23 @@
 invl main()
-    array[3] target = [5, 2, 3]
-    array[3] key = [220, 159, 99]
-    array[3] temp = [0, 0, 0]
+    array[4] a = [1, 2, 3, 4]
+    print(a)
+with
+    call g(a)
 
-    print(target)
-    print(key)
-    print(temp)
-    with call crypt(target, key, temp)
+invl test[0 0 1 0; 0 0 0 1; 1 0 0 0; 0 1 0 0]
 
-invl crypt(array[3] target, array[3] key, array[3] temp)
-    local int index = 0
-        from index = 0
+inj f(int x, int y)
+    x += y
+    y ^= x
+
+invl g(array[4] a)
+    local int i = 0
+        from i = 0
         do skip
         loop
-            temp[index] += target[index] ^ key[index]
-            index += 1
-        until index = 3
-    delocal int index = 3
-    with temp <=> target
+            call f(a[i], a[i + 1])
+            i += 1
+        until i = size(a) - 1
+    delocal int i = size(a) - 1
+with
+    call test(a[0], a[1], a[2], a[3])

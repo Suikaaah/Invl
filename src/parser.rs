@@ -1,4 +1,5 @@
 pub mod detail;
+pub mod mat;
 
 use crate::{
     parser::detail::{
@@ -8,6 +9,7 @@ use crate::{
     tokenizer::{detail::Token, TokenList},
 };
 use detail::Direction;
+use mat::InvlMat;
 use std::{collections::LinkedList, rc::Rc};
 
 #[derive(Debug)]
@@ -98,40 +100,74 @@ impl Parser {
         MainProc(list, s, i)
     }
 
-    fn parse_proc(&mut self) -> Proc {
-        let either = match self.pop_front() {
-            token @ (Token::Invl | Token::Inj) => token,
-            x => panic!("expected either invl or inj, found {x:?}"),
-        };
+    fn parse_mat(&mut self) -> InvlMat {
+        let mut numbers = Vec::new();
 
-        let q = self.parse_proc_id();
-        self.pop_assert(Token::LParen);
-
-        let mut args = LinkedList::new();
-
-        if !matches!(self.seek_front(), Token::RParen) {
+        if !matches!(self.seek_front(), Token::RBracket) {
             loop {
-                args.push_back(self.parse_typed_variable());
+                match self.pop_front() {
+                    Token::Literal(x) => numbers.push(x),
+                    Token::Minus => match self.pop_front() {
+                        Token::Literal(x) => numbers.push(-x),
+                        x => panic!("expected literal, found {x:?}"),
+                    },
+                    x => panic!("expected literal or minus, found {x:?}"),
+                }
+
                 match self.seek_front() {
-                    Token::Comma => {
+                    Token::Semicolon => {
                         self.pop_front();
                     }
-                    _ => break,
+                    Token::RBracket => break,
+                    _ => {}
                 }
             }
         }
 
-        self.pop_assert(Token::RParen);
-        let s = self.parse_statement();
+        self.pop_assert(Token::RBracket);
+        InvlMat::new(numbers).expect("invalid invl_mat")
+    }
 
-        match either {
-            Token::Inj => Proc::Inj(q, args, s),
-            Token::Invl => {
-                self.pop_assert(Token::With);
-                let i = self.parse_invl();
-                Proc::Invl(q, args, s, i)
+    fn parse_proc(&mut self) -> Proc {
+        let either = match self.pop_front() {
+            token @ (Token::Invl | Token::Inj) => token,
+            x => panic!("expected invl or inj, found {x:?}"),
+        };
+
+        let q = self.parse_proc_id();
+
+        match self.pop_front() {
+            Token::LParen => {
+                let mut args = LinkedList::new();
+
+                if !matches!(self.seek_front(), Token::RParen) {
+                    loop {
+                        args.push_back(self.parse_typed_variable());
+                        match self.seek_front() {
+                            Token::Comma => {
+                                self.pop_front();
+                            }
+                            Token::RParen => break,
+                            x => panic!("unexpected token: {x:?}"),
+                        }
+                    }
+                }
+
+                self.pop_assert(Token::RParen);
+                let s = self.parse_statement();
+
+                match either {
+                    Token::Inj => Proc::Inj(q, args, s),
+                    Token::Invl => {
+                        self.pop_assert(Token::With);
+                        let i = self.parse_invl();
+                        Proc::Invl(q, args, s, i)
+                    }
+                    _ => unreachable!(),
+                }
             }
-            _ => unreachable!(),
+            Token::LBracket => Proc::Mat(q, self.parse_mat()),
+            x => panic!("expected proc, found {x:?}"),
         }
     }
 
