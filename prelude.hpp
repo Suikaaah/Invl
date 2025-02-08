@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <utility>
+#include <vector>
 
 using Int = int;
 using List = std::deque<Int>;
@@ -43,5 +44,96 @@ template <class T> void print(const char* name, const T& target) {
 template <class T> constexpr void swap(T&& l, T&& r) {
     std::swap(std::forward<T>(l), std::forward<T>(r));
 }
+
+struct Updatable {
+    virtual void update() noexcept(false) = 0;
+};
+
+class Cell: public Updatable {
+    Int* ptr;
+    Int  initial;
+    bool read;
+    bool mutated;
+    bool used;
+
+public:
+    constexpr explicit Cell(Int* ptr) noexcept
+        : ptr(ptr), initial(*ptr), read(false), mutated(false), used(false) {}
+    
+    constexpr Int& get() noexcept(false) {
+        if (mutated) {
+            std::cout << "attempted to read mutated variable" << std::endl;
+            throw nullptr;
+        }
+
+        read = true;
+        return *ptr;
+    }
+
+    void update() noexcept(false) {
+        if (*ptr != initial) {
+            if (used) {
+                std::cout << "mutation of used variable" << std::endl;
+                throw nullptr;
+            }
+
+            initial = *ptr;
+            mutated = true;
+        }
+        if (read) {
+            used = true;
+            read = false;
+        }
+    }
+};
+
+class IndexedCell: public Updatable {
+    std::vector<Cell> data;
+
+public:
+    explicit IndexedCell(std::vector<Cell>&& data)
+        : data(std::move(data)) {}
+
+    constexpr Int& get(std::size_t i) {
+        return data[i].get();
+    }
+
+    void update() noexcept(false) {
+        for (auto& cell: data) {
+            cell.update();
+        }
+    }
+};
+
+class Cells: public Updatable {
+    std::vector<Updatable*> cells;
+
+public:
+    explicit Cells(std::vector<Updatable*>&& cells)
+        : cells(std::move(cells)) {}
+
+    void update() noexcept(false) {
+        for (auto cell: cells) cell->update();
+    }
+};
+
+Cell make_cell(Int& obj) { return Cell(&obj); }
+
+template <std::size_t N>
+IndexedCell make_cell(Array<N>& obj) {
+    std::vector<Cell> data;
+    data.reserve(N);
+    for (auto& x: obj) data.emplace_back(&x);
+    return IndexedCell(std::move(data));
+}
+
+IndexedCell make_cell(List& obj) {
+    std::vector<Cell> data;
+    for (auto& x: obj) data.emplace_back(&x);
+    return IndexedCell(std::move(data));
+}
+
+template <class... Args>
+Cells make_cells(Args&... args) { return Cells({&args...}); }
 
 #endif

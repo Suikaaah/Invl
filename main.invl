@@ -1,16 +1,7 @@
 invl main()
-    int w = 3
-    int x = 4
-    int y = 5
-    int z = 6
-
-    w += z
-    x -= y
+    array[3] a = [1, 2, 3]
+    int m = 0
+    int n = 1
 with
-    call mirror(w, x, y, z)
-
-invl mirror[0 0 0 1; 0 0 1 0; 0 1 0 0; 1 0 0 0]
-
-invl negate[-1]
-
-invl a[5 -6; 4 -5]
+    a[0] <=> m
+    a[n] <=> a[2]

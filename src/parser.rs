@@ -176,15 +176,22 @@ impl Parser {
     }
 
     fn parse_invl(&mut self) -> Statement {
-        match self.parse_statement() {
-            s @ (Statement::Mut(_, MutOp::Xor | MutOp::Swap, _)
-            | Statement::IndexedMut(_, _, MutOp::Xor | MutOp::Swap, _)
-            | Statement::Call(_, _)
-            | Statement::Uncall(_, _)
-            | Statement::Skip
-            | Statement::Print(_)) => s,
-            x => panic!("expected invl, found {x:?}"),
+        fn check(statement: Statement) -> Statement {
+            match statement {
+                s @ (Statement::Mut(_, MutOp::Xor | MutOp::Swap, _)
+                | Statement::IndexedMut(_, _, MutOp::Xor | MutOp::Swap, _)
+                | Statement::Call(_, _)
+                | Statement::Uncall(_, _)
+                | Statement::Skip
+                | Statement::Print(_)) => s,
+                Statement::Sequence(l, r) => {
+                    Statement::Sequence(Box::new(check(*l)), Box::new(check(*r)))
+                }
+                x => panic!("expected invl, found {x:?}"),
+            }
         }
+
+        check(self.parse_statement())
     }
 
     fn parse_statement(&mut self) -> Statement {

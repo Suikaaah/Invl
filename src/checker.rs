@@ -45,7 +45,7 @@ impl Checker {
         match self.types.get(id) {
             Some(ProcType::Inj) => panic!("expected invl, found inj"),
             Some(ProcType::Invl) => {}
-            None => panic!("undefined function found: {:?}", id.0)
+            None => panic!("undefined function found: {:?}", id.0),
         }
     }
 
