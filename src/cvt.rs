@@ -39,7 +39,7 @@ impl CvtMutOp for MutOp {
             Self::Add => format!("{l} += {r};"),
             Self::Sub => format!("{l} -= {r};"),
             Self::Xor => format!("{l} ^= {r};"),
-            Self::Swap => format!("std::swap({l}, {r});"),
+            Self::Swap => format!("swap({l}, {r});"),
         }
     }
 }
@@ -147,7 +147,12 @@ impl Cvt for MainProc {
         }
         buf += &format!("\n{}", statement.cvt_ind(1));
         buf += &format!("\n{}", invl.cvt_ind(1));
-        buf += &format!("\n{}}}\n", statement.flip().cvt_ind(1));
+        buf += &format!("\n{}\n", statement.flip().cvt_ind(1));
+        for (TypedVariable(_, var), _) in decls {
+            let name = var.0.as_ref();
+            buf += &format!("{spaces}print(\"{name}\", {name});\n");
+        }
+        buf += "}\n";
         buf
     }
 }
@@ -247,7 +252,7 @@ impl CvtInd for Statement {
         match self {
             Self::Mut(x, op, e) => spaces + &op.cvt_mut_op(&x.cvt(), &e.cvt()) + "\n",
             Self::IndexedMut(x, i, op, e) => {
-                op.cvt_mut_op(&format!("{spaces}{}[{}]", x.cvt(), i.cvt()), &e.cvt()) + "\n"
+                spaces + &op.cvt_mut_op(&format!("{}[{}]", x.cvt(), i.cvt()), &e.cvt()) + "\n"
             }
             Self::IfThenElseFi(e_l, s_l, s_r, e_r) => format!(
                 "{spaces}if ({0}) {{\n{1}{more_spaces}assert({3});\n{spaces}}} else {{\n{2}{more_spaces}assert(!({3}));\n{spaces}}}\n",

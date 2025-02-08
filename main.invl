@@ -1,23 +1,16 @@
 invl main()
-    array[4] a = [-12, 23, -13, 7]
-    print(a)
+    int w = 3
+    int x = 4
+    int y = 5
+    int z = 6
+
+    w += z
+    x -= y
 with
-    call g(a)
+    call mirror(w, x, y, z)
 
-invl test[0 0 1 0; 0 0 0 1; 1 0 0 0; 0 1 0 0]
+invl mirror[0 0 0 1; 0 0 1 0; 0 1 0 0; 1 0 0 0]
 
-inj f(int x, int y)
-    x += y
-    y ^= x
+invl negate[-1]
 
-invl g(array[4] a)
-    local int i = 0
-        from i = 0
-        do skip
-        loop
-            call f(a[i], a[i + 1])
-            i += 1
-        until i = size(a) - 1
-    delocal int i = size(a) - 1
-with
-    call test(a[0], a[1], a[2], a[3])
+invl a[5 -6; 4 -5]

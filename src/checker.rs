@@ -21,12 +21,14 @@ impl Checker {
         let Program(_, procs) = program;
         let mut types = BTreeMap::<ProcId, ProcType>::new();
         for proc in procs {
-            match proc {
-                Proc::Inj(id, _, _) => types.insert(id.clone(), ProcType::Inj),
+            if let (id, Some(_)) = match proc {
+                Proc::Inj(id, _, _) => (id, types.insert(id.clone(), ProcType::Inj)),
                 Proc::Invl(id, _, _, _) | Proc::Mat(id, _) => {
-                    types.insert(id.clone(), ProcType::Invl)
+                    (id, types.insert(id.clone(), ProcType::Invl))
                 }
-            };
+            } {
+                panic!("colliding function names: {}", id.0);
+            }
         }
         Self { types }
     }
@@ -43,7 +45,7 @@ impl Checker {
         match self.types.get(id) {
             Some(ProcType::Inj) => panic!("expected invl, found inj"),
             Some(ProcType::Invl) => {}
-            None => unreachable!(),
+            None => panic!("undefined function found: {:?}", id.0)
         }
     }
 

@@ -94,7 +94,11 @@ impl Parser {
             }
         }
 
-        let s = self.parse_statement();
+        let s = if matches!(self.seek_front(), Token::With) {
+            Statement::Skip
+        } else {
+            self.parse_statement()
+        };
         self.pop_assert(Token::With);
         let i = self.parse_invl();
         MainProc(list, s, i)
