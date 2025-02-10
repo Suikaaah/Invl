@@ -1,7 +1,15 @@
 invl main()
+    list l
     array[3] a = [1, 2, 3]
-    int m = 0
-    int n = 1
+
 with
-    a[0] <=> m
-    a[n] <=> a[2]
+    call f(l, a[0], a[1])
+    a[2] ^= 255
+
+invl f(list l, int m, int n)
+    if   0 < m
+    then push(m, l)
+    else m <=> n
+    fi   m <= 0
+with
+    m <=> n

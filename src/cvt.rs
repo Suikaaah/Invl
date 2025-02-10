@@ -157,7 +157,7 @@ impl Cvt for MainProc {
         for (TypedVariable(_, var), _) in decls {
             buf += &format!("{spaces}auto {0}_ = make_cell({0});\n", var.0);
         }
-        buf += &format!("{spaces}auto cells = make_cells(");
+        buf += &format!("{spaces}Cells cells(");
         buf += &concat(decls, ", ", |(TypedVariable(_, var), _)| {
             format!("{}_", var.0)
         });
@@ -192,10 +192,10 @@ impl Cvt for Proc {
                 let mut body = concat(args, ", ", |arg| arg.cvt_ref())
                     + &format!(") {{\n{}\n", statement.cvt_ind(1));
                 for TypedVariable(_, var) in args {
-                    buf += &format!("{spaces}auto {0}_ = make_cell({0});\n", var.0);
+                    body += &format!("{spaces}auto {0}_ = make_cell({0});\n", var.0);
                 }
-                buf += &format!("{spaces}auto cells = make_cells(");
-                buf += &concat(args, ", ", |TypedVariable(_, var)| format!("{}_", var.0));
+                body += &format!("{spaces}Cells cells(");
+                body += &concat(args, ", ", |TypedVariable(_, var)| format!("{}_", var.0));
                 body += &format!(");\n\n{}", invl.cvt_ind_celled(1));
                 body += &format!("\n{}}}\n", statement.flip().cvt_ind(1));
 
@@ -323,15 +323,19 @@ impl CvtIndCelled for Statement {
 
         match self {
             Self::Mut(x, op, e) => {
-                spaces + &op.cvt_mut_op(&x.cvt_celled(), &e.cvt_celled()) + " cells.update();\n"
+                format!(
+                    "{spaces}{}\n{spaces}cells.update();\n",
+                    op.cvt_mut_op(&x.cvt_celled(), &e.cvt_celled())
+                )
             }
             Self::IndexedMut(x, i, op, e) => {
-                spaces
-                    + &op.cvt_mut_op(
-                        &format!("{}_.get({})", x.cvt(), i.cvt_celled()),
+                format!(
+                    "{spaces}{}\n{spaces}cells.update();\n",
+                    op.cvt_mut_op(
+                        &format!("{}_[{}]", x.cvt(), i.cvt_celled()),
                         &e.cvt_celled(),
                     )
-                    + " cells.update();\n"
+                )
             }
             either @ (Self::Call(q, args) | Self::Uncall(q, args)) => {
                 let postfix = match either {
@@ -341,7 +345,7 @@ impl CvtIndCelled for Statement {
                 };
                 let mut buf = format!("{spaces}{}_{}(", q.cvt(), postfix);
                 buf += &concat(args, ", ", |arg| arg.cvt_celled());
-                buf += "); cells.update();\n";
+                buf += &format!(");\n{spaces}cells.update();\n");
                 buf
             }
             Self::Skip => String::new(),
@@ -374,7 +378,7 @@ impl Cvt for Expr {
 
 impl CvtCelled for Variable {
     fn cvt_celled(&self) -> String {
-        self.cvt() + "_.get()"
+        format!("(*{}_)", self.cvt())
     }
 }
 
@@ -382,7 +386,7 @@ impl CvtCelled for Expr {
     fn cvt_celled(&self) -> String {
         match self {
             Self::Variable(x) => x.cvt_celled(),
-            Self::Indexed(x, e) => format!("{}_.get({})", x.cvt(), e.cvt_celled()),
+            Self::Indexed(x, e) => format!("{}_[{}]", x.cvt(), e.cvt_celled()),
             Self::BinOp(l, op, r) => format!("{} {} {}", l.cvt_celled(), op.cvt(), r.cvt_celled()),
             Self::UnrOp(op, x) => format!("{}{}", op.cvt(), x.cvt_celled()),
             Self::Wrapped(x) => format!("({})", x.cvt_celled()),
