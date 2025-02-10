@@ -1,12 +1,14 @@
 invl main()
-    list l = [3, 2]
+    list l = [1, 2, 3, 4]
+    list r = [9, 8, 7]
+    int min
 with
-    call f(l)
+    call f(l, r, min)
 
-invl c_minus_x[1 0; 1 -1]
-
-invl f(list l)
+invl f(list l, list r, int min)
+    if size(l) < size(r)
+    then min += size(l)
+    else min += size(r)
+    fi size(l) < size(r)
 with
-    for x in size(l)
-        l[x] ^= 3254908
-    end
+    l <=> r

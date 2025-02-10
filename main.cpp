@@ -1,72 +1,76 @@
 #include "prelude.hpp"
 
-void c_minus_x_fwd(Int& v0, Int& v1);
-void c_minus_x_rev(Int& v0, Int& v1);
-void f_fwd(List& l);
-void f_rev(List& l);
+void f_fwd(List& l, List& r, Int& min);
+void f_rev(List& l, List& r, Int& min);
 
 int main() {
-    List l = {3, 2};
+    List l = {1, 2, 3, 4};
+    List r = {9, 8, 7};
+    Int min{};
 
 
     auto l_ = make_cell(l);
-    Cells cells(l_);
+    auto r_ = make_cell(r);
+    auto min_ = make_cell(min);
+    Cells cells(l_, r_, min_);
 
-    f_fwd((*l_));
+    f_fwd((*l_), (*r_), (*min_));
     cells.update();
 
 
     print("l", l);
+    print("r", r);
+    print("min", min);
 }
 
-void c_minus_x_fwd(Int& v0, Int& v1) {
-    Int c0 = v0;
-    Int c1 = v1;
-    v0 = 1 * c0 + 0 * c1;
-    v1 = 1 * c0 + -1 * c1;
-}
-
-void c_minus_x_rev(Int& v0, Int& v1) {
-    Int c0 = v0;
-    Int c1 = v1;
-    v0 = 1 * c0 + 0 * c1;
-    v1 = 1 * c0 + -1 * c1;
-}
-
-void f_fwd(List& l) {
-
-    auto l_ = make_cell(l);
-    Cells cells(l_);
-
-    {
-        Cell x_;
-        cells.push(x_);
-        for (Int i = 0; i < l.size(); ++i) {
-            x_ = make_cell(i);
-
-            l_[(*x_)] ^= 3254908;
-            cells.update();
-        }
-        cells.pop();
+void f_fwd(List& l, List& r, Int& min) {
+    if (l.size() < r.size()) {
+        min += l.size();
+        assert(l.size() < r.size());
+    } else {
+        min += r.size();
+        assert(!(l.size() < r.size()));
     }
 
+    auto l_ = make_cell(l);
+    auto r_ = make_cell(r);
+    auto min_ = make_cell(min);
+    Cells cells(l_, r_, min_);
+
+    swap((*l_), (*r_));
+    cells.update();
+
+    if (l.size() < r.size()) {
+        min -= l.size();
+        assert(l.size() < r.size());
+    } else {
+        min -= r.size();
+        assert(!(l.size() < r.size()));
+    }
 }
 
-void f_rev(List& l) {
-
-    auto l_ = make_cell(l);
-    Cells cells(l_);
-
-    {
-        Cell x_;
-        cells.push(x_);
-        for (Int i = 0; i < l.size(); ++i) {
-            x_ = make_cell(i);
-
-            l_[(*x_)] ^= 3254908;
-            cells.update();
-        }
-        cells.pop();
+void f_rev(List& l, List& r, Int& min) {
+    if (l.size() < r.size()) {
+        min += l.size();
+        assert(l.size() < r.size());
+    } else {
+        min += r.size();
+        assert(!(l.size() < r.size()));
     }
 
+    auto l_ = make_cell(l);
+    auto r_ = make_cell(r);
+    auto min_ = make_cell(min);
+    Cells cells(l_, r_, min_);
+
+    swap((*l_), (*r_));
+    cells.update();
+
+    if (l.size() < r.size()) {
+        min -= l.size();
+        assert(l.size() < r.size());
+    } else {
+        min -= r.size();
+        assert(!(l.size() < r.size()));
+    }
 }

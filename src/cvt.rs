@@ -363,8 +363,10 @@ impl CvtIndCelled for Statement {
                 ) + &format!(
                     "{more_spaces}for (Int i = 0; i < {}; ++i) {{\n",
                     rep.cvt_celled()
-                ) + &format!("{even_more_spaces}{}_ = make_cell(i);\n\n", x.cvt())
-                    + &s.cvt_ind_celled(depth + 2)
+                ) + &format!(
+                    "{even_more_spaces}{}_ = make_cell(i); {};\n{even_more_spaces}cells.update();\n\n",
+                    x.cvt(), x.cvt_celled()
+                ) + &s.cvt_ind_celled(depth + 2)
                     + &format!("{more_spaces}}}\n{more_spaces}cells.pop();\n{spaces}}}\n")
             }
             _ => unreachable!(),
@@ -399,12 +401,16 @@ impl CvtCelled for Variable {
 impl CvtCelled for Expr {
     fn cvt_celled(&self) -> String {
         match self {
+            Self::Const(x) => x.to_string(),
             Self::Variable(x) => x.cvt_celled(),
             Self::Indexed(x, e) => format!("{}_[{}]", x.cvt(), e.cvt_celled()),
             Self::BinOp(l, op, r) => format!("{} {} {}", l.cvt_celled(), op.cvt(), r.cvt_celled()),
             Self::UnrOp(op, x) => format!("{}{}", op.cvt(), x.cvt_celled()),
             Self::Wrapped(x) => format!("({})", x.cvt_celled()),
-            x => x.cvt(),
+            Self::Empty(x) => format!("{}_->empty()", x.cvt()),
+            Self::Top(x) => format!("{}_->front()", x.cvt()),
+            Self::Size(x) => format!("{}_->size()", x.cvt()),
+            _ => unreachable!(),
         }
     }
 }

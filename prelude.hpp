@@ -128,6 +128,8 @@ public:
         return *container;
     }
 
+    T* operator->() { return &operator*(); }
+
     Int& operator[](std::size_t i) {
         verify_size();
         element_read = true;

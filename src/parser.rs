@@ -295,7 +295,7 @@ impl Parser {
             }
             Token::For => {
                 let x = self.parse_variable();
-                self.pop_assert(Token::In);
+                self.pop_assert(Token::To);
                 let rep = self.parse_expr(0);
                 let s = self.parse_invl();
                 self.pop_assert(Token::End);

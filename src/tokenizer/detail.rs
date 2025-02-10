@@ -59,7 +59,7 @@ pub enum Token {
     With,
     Semicolon,
     For,
-    In,
+    To,
     End,
 }
 
