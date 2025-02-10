@@ -37,6 +37,7 @@ impl Flip for Statement {
             Self::Uncall(q, args) => Self::Call(q.clone(), args.clone()),
             Self::Skip => Self::Skip,
             Self::Print(x) => Self::Print(x.clone()),
+            Self::For(_, _, _) => unreachable!(),
             Self::Sequence(l, r) => Self::Sequence(Box::new(r.flip()), Box::new(l.flip())),
         }
     }

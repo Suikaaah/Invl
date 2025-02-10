@@ -312,6 +312,7 @@ impl CvtInd for Statement {
             }
             Self::Skip => String::new(),
             Self::Print(x) => format!("{spaces}print(\"{0}\", {0});\n", x.0),
+            Self::For(_, _, _) => unreachable!(),
             Self::Sequence(l, r) => format!("{}{}", l.cvt_ind(depth), r.cvt_ind(depth)),
         }
     }
@@ -320,6 +321,8 @@ impl CvtInd for Statement {
 impl CvtIndCelled for Statement {
     fn cvt_ind_celled(&self, depth: usize) -> String {
         let spaces = indent(depth);
+        let more_spaces = indent(depth + 1);
+        let even_more_spaces = indent(depth + 2);
 
         match self {
             Self::Mut(x, op, e) => {
@@ -352,6 +355,17 @@ impl CvtIndCelled for Statement {
             Self::Print(x) => format!("{spaces}print(\"{0}\", {0});\n", x.0),
             Self::Sequence(l, r) => {
                 format!("{}{}", l.cvt_ind_celled(depth), r.cvt_ind_celled(depth))
+            }
+            Self::For(x, rep, s) => {
+                format!(
+                    "{spaces}{{\n{more_spaces}Cell {0}_;\n{more_spaces}cells.push({0}_);\n",
+                    x.cvt()
+                ) + &format!(
+                    "{more_spaces}for (Int i = 0; i < {}; ++i) {{\n",
+                    rep.cvt_celled()
+                ) + &format!("{even_more_spaces}{}_ = make_cell(i);\n\n", x.cvt())
+                    + &s.cvt_ind_celled(depth + 2)
+                    + &format!("{more_spaces}}}\n{more_spaces}cells.pop();\n{spaces}}}\n")
             }
             _ => unreachable!(),
         }

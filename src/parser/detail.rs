@@ -93,6 +93,7 @@ pub enum Statement {
     Uncall(ProcId, LinkedList<Expr>),
     Skip,
     Print(Variable),
+    For(Variable, Expr, Box<Statement>),
     Sequence(Box<Statement>, Box<Statement>),
 }
 

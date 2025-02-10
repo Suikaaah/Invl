@@ -1,15 +1,12 @@
 invl main()
-    list l
-    array[3] a = [1, 2, 3]
-
+    list l = [3, 2]
 with
-    call f(l, a[0], a[1])
-    a[2] ^= 255
+    call f(l)
 
-invl f(list l, int m, int n)
-    if   0 < m
-    then push(m, l)
-    else m <=> n
-    fi   m <= 0
+invl c_minus_x[1 0; 1 -1]
+
+invl f(list l)
 with
-    m <=> n
+    for x in size(l)
+        l[x] ^= 3254908
+    end

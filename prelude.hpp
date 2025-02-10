@@ -22,7 +22,7 @@ template <> struct S<List> {
 };
 template <std::size_t N> struct S<Array<N>> {
     using Vp = void*;
-    static std::string name() { return "array[" + std::to_string(N) + "]"; }
+    static std::string name() { return "array<" + std::to_string(N) + ">"; }
 };
 template <> struct S<Int> {
     static constexpr const char* name() noexcept { return "int"; }
@@ -78,6 +78,7 @@ class Cell: public Updatable {
     bool read, mutated_delayed, read_delayed;
 
 public:
+    Cell() {}
     explicit Cell(Int& obj)
         : ptr(&obj), initial(obj), read(false), mutated_delayed(false), read_delayed(false) {}
     
@@ -159,6 +160,11 @@ public:
     void update() final {
         for (auto cell: cells) cell->update();
     }
+
+    template <class T>
+    void push(T& obj) { cells.emplace_back(&obj); }
+
+    void pop() { cells.pop_back(); }
 };
 
 Cell make_cell(Int& obj) {

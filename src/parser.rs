@@ -38,9 +38,9 @@ impl Parser {
             Token::Int => Type::Int,
             Token::List => Type::List,
             Token::Array => {
-                self.pop_assert(Token::LBracket);
+                self.pop_assert(Token::LAngleBracket);
                 let c = self.parse_literal();
-                self.pop_assert(Token::RBracket);
+                self.pop_assert(Token::RAngleBracket);
                 Type::Array(c as usize)
             }
             x => panic!("expected type, found {x:?}"),
@@ -158,11 +158,15 @@ impl Parser {
                 }
 
                 self.pop_assert(Token::RParen);
-                let s = self.parse_statement();
 
                 match either {
-                    Token::Inj => Proc::Inj(q, args, s),
+                    Token::Inj => Proc::Inj(q, args, self.parse_statement()),
                     Token::Invl => {
+                        let s = if matches!(self.seek_front(), Token::With) {
+                            Statement::Skip
+                        } else {
+                            self.parse_statement()
+                        };
                         self.pop_assert(Token::With);
                         let i = self.parse_invl();
                         Proc::Invl(q, args, s, i)
@@ -183,7 +187,8 @@ impl Parser {
                 | Statement::Call(_, _)
                 | Statement::Uncall(_, _)
                 | Statement::Skip
-                | Statement::Print(_)) => s,
+                | Statement::Print(_)
+                | Statement::For(_, _, _)) => s,
                 Statement::Sequence(l, r) => {
                     Statement::Sequence(Box::new(check(*l)), Box::new(check(*r)))
                 }
@@ -287,6 +292,14 @@ impl Parser {
                 let x = self.parse_variable();
                 self.pop_assert(Token::RParen);
                 Statement::Print(x)
+            }
+            Token::For => {
+                let x = self.parse_variable();
+                self.pop_assert(Token::In);
+                let rep = self.parse_expr(0);
+                let s = self.parse_invl();
+                self.pop_assert(Token::End);
+                Statement::For(x, rep, Box::new(s))
             }
             x => panic!("expected statement, found {x:?}"),
         };

@@ -1,81 +1,72 @@
 #include "prelude.hpp"
 
-void f_fwd(List& l, Int& m, Int& n);
-void f_rev(List& l, Int& m, Int& n);
+void c_minus_x_fwd(Int& v0, Int& v1);
+void c_minus_x_rev(Int& v0, Int& v1);
+void f_fwd(List& l);
+void f_rev(List& l);
 
 int main() {
-    List l{};
-    Array<3> a = {1, 2, 3};
+    List l = {3, 2};
 
 
     auto l_ = make_cell(l);
-    auto a_ = make_cell(a);
-    Cells cells(l_, a_);
+    Cells cells(l_);
 
-    f_fwd((*l_), a_[0], a_[1]);
-    cells.update();
-    a_[2] ^= 255;
+    f_fwd((*l_));
     cells.update();
 
 
     print("l", l);
-    print("a", a);
 }
 
-void f_fwd(List& l, Int& m, Int& n) {
-    if (0 < m) {
-        l.push_front(m);
-        m = 0;
-        assert(m <= 0);
-    } else {
-        swap(m, n);
-        assert(!(m <= 0));
-    }
-
-    auto l_ = make_cell(l);
-    auto m_ = make_cell(m);
-    auto n_ = make_cell(n);
-    Cells cells(l_, m_, n_);
-
-    swap((*m_), (*n_));
-    cells.update();
-
-    if (m <= 0) {
-        assert(m == 0);
-        m = l.front();
-        l.pop_front();
-        assert(0 < m);
-    } else {
-        swap(m, n);
-        assert(!(0 < m));
-    }
+void c_minus_x_fwd(Int& v0, Int& v1) {
+    Int c0 = v0;
+    Int c1 = v1;
+    v0 = 1 * c0 + 0 * c1;
+    v1 = 1 * c0 + -1 * c1;
 }
 
-void f_rev(List& l, Int& m, Int& n) {
-    if (0 < m) {
-        l.push_front(m);
-        m = 0;
-        assert(m <= 0);
-    } else {
-        swap(m, n);
-        assert(!(m <= 0));
-    }
+void c_minus_x_rev(Int& v0, Int& v1) {
+    Int c0 = v0;
+    Int c1 = v1;
+    v0 = 1 * c0 + 0 * c1;
+    v1 = 1 * c0 + -1 * c1;
+}
+
+void f_fwd(List& l) {
 
     auto l_ = make_cell(l);
-    auto m_ = make_cell(m);
-    auto n_ = make_cell(n);
-    Cells cells(l_, m_, n_);
+    Cells cells(l_);
 
-    swap((*m_), (*n_));
-    cells.update();
+    {
+        Cell x_;
+        cells.push(x_);
+        for (Int i = 0; i < l.size(); ++i) {
+            x_ = make_cell(i);
 
-    if (m <= 0) {
-        assert(m == 0);
-        m = l.front();
-        l.pop_front();
-        assert(0 < m);
-    } else {
-        swap(m, n);
-        assert(!(0 < m));
+            l_[(*x_)] ^= 3254908;
+            cells.update();
+        }
+        cells.pop();
     }
+
+}
+
+void f_rev(List& l) {
+
+    auto l_ = make_cell(l);
+    Cells cells(l_);
+
+    {
+        Cell x_;
+        cells.push(x_);
+        for (Int i = 0; i < l.size(); ++i) {
+            x_ = make_cell(i);
+
+            l_[(*x_)] ^= 3254908;
+            cells.update();
+        }
+        cells.pop();
+    }
+
 }

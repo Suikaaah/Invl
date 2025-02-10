@@ -58,6 +58,9 @@ pub enum Token {
     Print,
     With,
     Semicolon,
+    For,
+    In,
+    End,
 }
 
 impl Token {
