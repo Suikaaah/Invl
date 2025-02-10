@@ -1,14 +1,14 @@
 invl main()
-    list l = [1, 2, 3, 4]
-    list r = [9, 8, 7]
-    int min
+    list l = [7, 8, 9]
+    list r = [1, 2, 3 ,4]
+    int temp
 with
-    call f(l, r, min)
+    call f(l, r, temp)
 
-invl f(list l, list r, int min)
-    if size(l) < size(r)
-    then min += size(l)
-    else min += size(r)
-    fi size(l) < size(r)
+invl f(list l, list r, int temp)
+    temp += size(l)
 with
+    for x to temp
+        skip
+    end
     l <=> r
