@@ -135,7 +135,7 @@ impl Parser {
     fn parse_proc(&mut self) -> Proc {
         let either = match self.pop_front() {
             token @ (Token::Invl | Token::Inj) => token,
-            x => panic!("expected invl or inj, found {x:?}"),
+            x => panic!("expected invl or inj, found {x:?} {self:?}"),
         };
 
         let q = self.parse_proc_id();
@@ -188,6 +188,7 @@ impl Parser {
                 | Statement::Uncall(_, _)
                 | Statement::Skip
                 | Statement::Print(_)
+                | Statement::IfThenElse(_, _, _)
                 | Statement::For(_, _, _)) => s,
                 Statement::Sequence(l, r) => {
                     Statement::Sequence(Box::new(check(*l)), Box::new(check(*r)))
@@ -222,9 +223,15 @@ impl Parser {
                 let s_l = self.parse_statement();
                 self.pop_assert(Token::Else);
                 let s_r = self.parse_statement();
-                self.pop_assert(Token::Fi);
-                let e_r = self.parse_expr(0);
-                Statement::IfThenElseFi(e_l, Box::new(s_l), Box::new(s_r), e_r)
+
+                match self.pop_front() {
+                    Token::Fi => {
+                        let e_r = self.parse_expr(0);
+                        Statement::IfThenElseFi(e_l, Box::new(s_l), Box::new(s_r), e_r)
+                    }
+                    Token::End => Statement::IfThenElse(e_l, Box::new(s_l), Box::new(s_r)),
+                    x => panic!("expected fi or end, found {x:?}"),
+                }
             }
             Token::From => {
                 let e_l = self.parse_expr(0);

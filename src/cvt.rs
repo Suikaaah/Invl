@@ -312,7 +312,8 @@ impl CvtInd for Statement {
             }
             Self::Skip => String::new(),
             Self::Print(x) => format!("{spaces}print(\"{0}\", {0});\n", x.0),
-            Self::For(_, _, _) => unreachable!(),
+            Self::For(_, _, _) => panic!("'for' statement is only allowed in involution"),
+            Self::IfThenElse(_, _, _) => panic!("'if-then-else' statement is only allowed in involution"),
             Self::Sequence(l, r) => format!("{}{}", l.cvt_ind(depth), r.cvt_ind(depth)),
         }
     }
@@ -346,10 +347,9 @@ impl CvtIndCelled for Statement {
                     Self::Uncall(_, _) => "rev",
                     _ => unreachable!(),
                 };
-                let mut buf = format!("{spaces}{}_{}(", q.cvt(), postfix);
-                buf += &concat(args, ", ", |arg| arg.cvt_celled());
-                buf += &format!(");\n{spaces}cells.update();\n");
-                buf
+                format!("{spaces}{}_{}(", q.cvt(), postfix)
+                    + &concat(args, ", ", |arg| arg.cvt_celled())
+                    + &format!(");\n{spaces}cells.update();\n")
             }
             Self::Skip => String::new(),
             Self::Print(x) => format!("{spaces}print(\"{0}\", {0});\n", x.0),
@@ -364,11 +364,18 @@ impl CvtIndCelled for Statement {
                     "{more_spaces}for (Int i = 0; i < {}; ++i) {{\n",
                     rep.cvt_celled()
                 ) + &format!(
-                    "{even_more_spaces}{}_ = make_cell(i); {};\n{even_more_spaces}cells.update();\n\n",
-                    x.cvt(), x.cvt_celled()
-                ) + &s.cvt_ind_celled(depth + 2)
+                "{even_more_spaces}{}_ = make_cell(i); {};\n{even_more_spaces}cells.update();\n\n",
+                x.cvt(),
+                x.cvt_celled()
+            ) + &s.cvt_ind_celled(depth + 2)
                     + &format!("{more_spaces}}}\n{more_spaces}cells.pop();\n{spaces}}}\n")
             }
+            Self::IfThenElse(e, s_l, s_r) => format!(
+                "{spaces}if ({}) {{\n{}{spaces}}} else {{\n{}{spaces}}}\n",
+                e.cvt_celled(),
+                s_l.cvt_ind_celled(depth + 1),
+                s_r.cvt_ind_celled(depth + 1),
+            ),
             _ => unreachable!(),
         }
     }

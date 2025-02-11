@@ -94,6 +94,7 @@ pub enum Statement {
     Skip,
     Print(Variable),
     For(Variable, Expr, Box<Statement>),
+    IfThenElse(Expr, Box<Statement>, Box<Statement>),
     Sequence(Box<Statement>, Box<Statement>),
 }
 

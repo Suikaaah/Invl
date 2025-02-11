@@ -15,7 +15,19 @@ pub struct Tokenizer {
 
 impl Tokenizer {
     pub fn tokenize(input: &str) -> TokenList {
-        Tokenizer::new(input)
+        let comments_excluded: String = input
+            .split("//")
+            .enumerate()
+            .map(|(i, x)| {
+                if i == 0 {
+                    x.to_string()
+                } else {
+                    x.lines().skip(1).collect::<String>()
+                }
+            })
+            .collect();
+
+        Tokenizer::new(&comments_excluded)
             .tokenize_impl(Machine::default())
             .take_tokens()
     }

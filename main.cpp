@@ -1,72 +1,106 @@
 #include "prelude.hpp"
 
-void f_fwd(List& l, List& r, Int& temp);
-void f_rev(List& l, List& r, Int& temp);
+void f_fwd(List& l, Array<5>& a, Int& count);
+void f_rev(List& l, Array<5>& a, Int& count);
 
 int main() {
-    List l = {7, 8, 9};
-    List r = {1, 2, 3, 4};
-    Int temp{};
+    List chars = {25, 39};
+    Array<5> table = {149, 221, 29, 92, 283};
+    Int count = 0;
 
 
-    auto l_ = make_cell(l);
-    auto r_ = make_cell(r);
-    auto temp_ = make_cell(temp);
-    Cells cells(l_, r_, temp_);
+    auto chars_ = make_cell(chars);
+    auto table_ = make_cell(table);
+    auto count_ = make_cell(count);
+    Cells cells(chars_, table_, count_);
 
-    f_fwd((*l_), (*r_), (*temp_));
+    f_fwd((*chars_), (*table_), (*count_));
     cells.update();
 
 
-    print("l", l);
-    print("r", r);
-    print("temp", temp);
+    print("chars", chars);
+    print("table", table);
+    print("count", count);
 }
 
-void f_fwd(List& l, List& r, Int& temp) {
-    temp += l.size();
+void f_fwd(List& l, Array<5>& a, Int& count) {
+    if (l.size() < a.size()) {
+        count += l.size();
+        assert(l.size() < a.size());
+    } else {
+        count += a.size();
+        assert(!(l.size() < a.size()));
+    }
 
     auto l_ = make_cell(l);
-    auto r_ = make_cell(r);
-    auto temp_ = make_cell(temp);
-    Cells cells(l_, r_, temp_);
+    auto a_ = make_cell(a);
+    auto count_ = make_cell(count);
+    Cells cells(l_, a_, count_);
 
-    {
-        Cell x_;
-        cells.push(x_);
-        for (Int i = 0; i < (*temp_); ++i) {
-            x_ = make_cell(i); (*x_);
-            cells.update();
+    if (2 < (*count_)) {
+        l_[0] ^= a_[0];
+        cells.update();
+    } else {
+        {
+            Cell i_;
+            cells.push(i_);
+            for (Int i = 0; i < (*count_); ++i) {
+                i_ = make_cell(i); (*i_);
+                cells.update();
 
+                l_[(*i_)] ^= a_[(*i_)];
+                cells.update();
+            }
+            cells.pop();
         }
-        cells.pop();
     }
-    swap((*l_), (*r_));
-    cells.update();
 
-    temp -= l.size();
+    if (l.size() < a.size()) {
+        count -= l.size();
+        assert(l.size() < a.size());
+    } else {
+        count -= a.size();
+        assert(!(l.size() < a.size()));
+    }
 }
 
-void f_rev(List& l, List& r, Int& temp) {
-    temp += l.size();
+void f_rev(List& l, Array<5>& a, Int& count) {
+    if (l.size() < a.size()) {
+        count += l.size();
+        assert(l.size() < a.size());
+    } else {
+        count += a.size();
+        assert(!(l.size() < a.size()));
+    }
 
     auto l_ = make_cell(l);
-    auto r_ = make_cell(r);
-    auto temp_ = make_cell(temp);
-    Cells cells(l_, r_, temp_);
+    auto a_ = make_cell(a);
+    auto count_ = make_cell(count);
+    Cells cells(l_, a_, count_);
 
-    {
-        Cell x_;
-        cells.push(x_);
-        for (Int i = 0; i < (*temp_); ++i) {
-            x_ = make_cell(i); (*x_);
-            cells.update();
+    if (2 < (*count_)) {
+        l_[0] ^= a_[0];
+        cells.update();
+    } else {
+        {
+            Cell i_;
+            cells.push(i_);
+            for (Int i = 0; i < (*count_); ++i) {
+                i_ = make_cell(i); (*i_);
+                cells.update();
 
+                l_[(*i_)] ^= a_[(*i_)];
+                cells.update();
+            }
+            cells.pop();
         }
-        cells.pop();
     }
-    swap((*l_), (*r_));
-    cells.update();
 
-    temp -= l.size();
+    if (l.size() < a.size()) {
+        count -= l.size();
+        assert(l.size() < a.size());
+    } else {
+        count -= a.size();
+        assert(!(l.size() < a.size()));
+    }
 }
