@@ -14,6 +14,20 @@ impl SquareMat {
             .expect("be careful")
     }
 
+    pub fn nop(&self, i: usize) -> bool {
+        for col in 0..self.size {
+            let is_diag = i == col;
+
+            match self.get(i, col) {
+                1 if is_diag => {}
+                0 if !is_diag => {}
+                _ => return false,
+            }
+        }
+
+        true
+    }
+
     fn new(data: Vec<i32>) -> Result<Self, String> {
         let len = data.len();
         let size = len.isqrt();

@@ -129,7 +129,7 @@ impl Checker {
 
                 for (l, r) in xs_l.iter().zip(xs_r) {
                     Self::check_variable(mutables, r);
-                    if let Some(_) = mutables.get(r) {
+                    if mutables.get(r).is_some() {
                         mutables.insert(l.clone(), false);
                     }
                 }

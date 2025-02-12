@@ -195,23 +195,29 @@ impl Cvt for Proc {
             Self::Mat(name, mat) => {
                 let args: Vec<_> = (0..mat.size)
                     .map(|i| Box::new(move |c| format!("{c}{i}")) as Box<dyn Fn(char) -> String>)
+                    .enumerate()
+                    .map(|(i, f)| (f, mat.nop(i)))
                     .collect();
 
-                let mut body = concat(&args, ", ", |arg| format!("Int& {}", arg('v'))) + ") {\n";
+                let mut body = concat(&args, ", ", |(f, nop)| {
+                    format!("{}Int& {}", if *nop { "const " } else { "" }, f('v'))
+                }) + ") {\n";
 
-                for arg in &args {
-                    body += &format!("{spaces}Int {} = {};\n", arg('c'), arg('v'));
+                for (f, _) in &args {
+                    body += &format!("{spaces}Int {} = {};\n", f('c'), f('v'));
                 }
 
-                for (i, arg) in args.iter().enumerate() {
-                    body += &format!("{spaces}{} = ", arg('v'));
+                for (i, (f, nop)) in args.iter().enumerate() {
+                    if !*nop {
+                        body += &format!("{spaces}{} = ", f('v'));
 
-                    let mut delim = "";
-                    for (j, var) in args.iter().enumerate() {
-                        body += mem::replace(&mut delim, " + ");
-                        body += &format!("{} * {}", mat.get(i, j), var('c'));
+                        let mut delim = "";
+                        for (j, (f, _)) in args.iter().enumerate() {
+                            body += mem::replace(&mut delim, " + ");
+                            body += &format!("{} * {}", mat.get(i, j), f('c'));
+                        }
+                        body += ";\n";
                     }
-                    body += ";\n";
                 }
                 body += "}\n";
 

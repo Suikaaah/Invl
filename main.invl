@@ -1,11 +1,6 @@
 invl main()
-    list     chars = [25, 39]
-    array<5> table = [149, 221, 29, 92, 283]
 with
-    call f(chars, table)
+    skip
 
-invl f(list l, array<5> a)
-with
-    for (i, j) in (l, a)
-        i ^= j
-    end
+invl s_x[1 0; 0 -1] 
+invl s_y[-1 0; 0 1] 
