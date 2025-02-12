@@ -3,6 +3,8 @@ use crate::parser::detail::{
 };
 use std::collections::BTreeMap;
 
+type Mutables = BTreeMap<Variable, bool>;
+
 #[derive(Debug)]
 enum ProcType {
     Inj,
@@ -13,8 +15,6 @@ enum ProcType {
 pub struct Checker {
     proc_types: BTreeMap<ProcId, ProcType>,
 }
-
-type Mutables = BTreeMap<Variable, bool>;
 
 impl Checker {
     pub fn check(program: &Program) {

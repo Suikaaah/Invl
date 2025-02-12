@@ -42,7 +42,7 @@ template <class T> void print(const char* name, const T& target) {
 }
 
 template <class T>
-constexpr void swap(T&& l, T&& r) {
+void swap(T&& l, T&& r) {
     std::swap(std::forward<T>(l), std::forward<T>(r));
 }
 

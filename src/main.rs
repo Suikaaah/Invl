@@ -21,7 +21,7 @@ fn main() {
 
     let Output { stdout, stderr, .. } = if cfg!(target_os = "windows") {
         Command::new("powershell")
-            .arg(include_str!("../command_windows_laptop"))
+            .arg(include_str!("../command_windows"))
             .output()
     } else if cfg!(target_os = "linux") {
         Command::new("sh")

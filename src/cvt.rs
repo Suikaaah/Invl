@@ -203,18 +203,21 @@ impl Cvt for Proc {
                     format!("{}Int& {}", if *nop { "const " } else { "" }, f('v'))
                 }) + ") {\n";
 
-                for (f, _) in &args {
-                    body += &format!("{spaces}Int {} = {};\n", f('c'), f('v'));
+                for (f, nop) in &args {
+                    if !nop {
+                        body += &format!("{spaces}Int {} = {};\n", f('c'), f('v'));
+                    }
                 }
 
                 for (i, (f, nop)) in args.iter().enumerate() {
-                    if !*nop {
+                    if !nop {
                         body += &format!("{spaces}{} = ", f('v'));
 
                         let mut delim = "";
-                        for (j, (f, _)) in args.iter().enumerate() {
+                        for (j, (f, nop)) in args.iter().enumerate() {
                             body += mem::replace(&mut delim, " + ");
-                            body += &format!("{} * {}", mat.get(i, j), f('c'));
+                            let c_or_v = if *nop { 'v' } else { 'c' };
+                            body += &format!("{} * {}", mat.get(i, j), f(c_or_v));
                         }
                         body += ";\n";
                     }
@@ -239,8 +242,11 @@ impl CvtSig for Proc {
                 concat(args, ", ", |arg| arg.cvt_ref())
             }
             Self::Mat(_, mat) => {
-                let args: Vec<String> = (0..mat.size).map(|i| format!("v{i}")).collect();
-                concat(&args, ", ", |arg| format!("Int& {arg}"))
+                let args: Vec<_> = (0..mat.size).map(|i| (i, mat.nop(i))).collect();
+
+                concat(&args, ", ", |(i, nop)| {
+                    format!("{}Int& v{i}", if *nop { "const " } else { "" })
+                })
             }
         };
 

@@ -1,6 +1,12 @@
 invl main()
+    list l
+    list r
 with
-    skip
+    l <=> r
 
 invl s_x[1 0; 0 -1] 
 invl s_y[-1 0; 0 1] 
+invl id_2[1 0; 0 1] 
+invl negate[-1]
+invl id_1[1]
+invl c_minus_x[1 0; 1 -1]
