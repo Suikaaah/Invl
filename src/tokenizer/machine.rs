@@ -72,8 +72,9 @@ impl Machine {
                 push("with", Token::With);
                 push(";", Token::Semicolon);
                 push("for", Token::For);
-                push("to", Token::To);
+                push("in", Token::In);
                 push("end", Token::End);
+                push("const", Token::Const);
                 retval
             };
         }

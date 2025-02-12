@@ -8,7 +8,7 @@ use crate::{
     },
     tokenizer::{detail::Token, TokenList},
 };
-use detail::Direction;
+use detail::{Direction, InnerType};
 use mat::InvlMat;
 use std::{collections::LinkedList, rc::Rc};
 
@@ -33,17 +33,32 @@ impl Parser {
         Program(p_main, procs)
     }
 
-    fn parse_type(&mut self) -> Type {
+    fn parse_inner_type(&mut self) -> InnerType {
         match self.pop_front() {
-            Token::Int => Type::Int,
-            Token::List => Type::List,
+            Token::Int => InnerType::Int,
+            Token::List => InnerType::List,
             Token::Array => {
                 self.pop_assert(Token::LAngleBracket);
                 let c = self.parse_literal();
                 self.pop_assert(Token::RAngleBracket);
-                Type::Array(c as usize)
+                InnerType::Array(c as usize)
             }
-            x => panic!("expected type, found {x:?}"),
+            x => panic!("expected inner type, found {x:?}"),
+        }
+    }
+
+    fn parse_type(&mut self) -> Type {
+        if let Token::Const = self.seek_front() {
+            self.pop_front();
+            Type {
+                r#const: true,
+                inner: self.parse_inner_type(),
+            }
+        } else {
+            Type {
+                r#const: false,
+                inner: self.parse_inner_type(),
+            }
         }
     }
 
@@ -94,7 +109,7 @@ impl Parser {
             }
         }
 
-        let s = if matches!(self.seek_front(), Token::With) {
+        let s = if let Token::With = self.seek_front() {
             Statement::Skip
         } else {
             self.parse_statement()
@@ -162,7 +177,7 @@ impl Parser {
                 match either {
                     Token::Inj => Proc::Inj(q, args, self.parse_statement()),
                     Token::Invl => {
-                        let s = if matches!(self.seek_front(), Token::With) {
+                        let s = if let Token::With = self.seek_front() {
                             Statement::Skip
                         } else {
                             self.parse_statement()
@@ -301,12 +316,36 @@ impl Parser {
                 Statement::Print(x)
             }
             Token::For => {
-                let x = self.parse_variable();
-                self.pop_assert(Token::To);
-                let rep = self.parse_expr(0);
-                let s = self.parse_invl();
+                let mut build = |first| {
+                    let mut l = LinkedList::new();
+                    if let Token::LParen = self.seek_front() {
+                        self.pop_front();
+                        loop {
+                            l.push_back(self.parse_variable());
+                            match self.pop_front() {
+                                Token::Comma => {}
+                                Token::RParen => break,
+                                x => panic!("unexpected token found in param list: {x:?}"),
+                            }
+                        }
+                    } else {
+                        l.push_back(self.parse_variable());
+                    }
+
+                    if first {
+                        self.pop_assert(Token::In);
+                    }
+
+                    l
+                };
+
+                let x = build(true);
+                let v = build(false);
+                assert!(x.len() == v.len(), "unmatched variables");
+                let s = self.parse_statement();
                 self.pop_assert(Token::End);
-                Statement::For(x, rep, Box::new(s))
+
+                Statement::For(x, v, Box::new(s))
             }
             x => panic!("expected statement, found {x:?}"),
         };
@@ -347,14 +386,9 @@ impl Parser {
 
                 loop {
                     items.push_back(self.parse_expr(0));
-                    match self.seek_front() {
-                        Token::Comma => {
-                            self.pop_front();
-                        }
-                        Token::RBracket => {
-                            self.pop_front();
-                            break;
-                        }
+                    match self.pop_front() {
+                        Token::Comma => {}
+                        Token::RBracket => break,
                         x => panic!("unexpected token found in array: {x:?}"),
                     }
                 }
@@ -374,7 +408,7 @@ impl Parser {
                 }
             }
             Token::Name(x) => {
-                if matches!(self.tokens.front(), Some(Token::LBracket)) {
+                if let Some(Token::LBracket) = self.tokens.front() {
                     self.pop_front();
                     let e = self.parse_expr(0);
                     self.pop_assert(Token::RBracket);

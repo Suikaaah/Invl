@@ -59,8 +59,9 @@ pub enum Token {
     With,
     Semicolon,
     For,
-    To,
+    In,
     End,
+    Const,
 }
 
 impl Token {

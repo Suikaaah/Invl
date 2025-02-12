@@ -2,10 +2,16 @@ use crate::parser::mat::InvlMat;
 use std::{collections::LinkedList, rc::Rc};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Type {
+pub enum InnerType {
     Int,
     Array(usize),
     List,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Type {
+    pub r#const: bool,
+    pub inner: InnerType,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -42,7 +48,7 @@ pub enum MutOp {
     Swap,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Variable(pub Rc<String>);
 
 impl Variable {
@@ -93,7 +99,7 @@ pub enum Statement {
     Uncall(ProcId, LinkedList<Expr>),
     Skip,
     Print(Variable),
-    For(Variable, Expr, Box<Statement>),
+    For(LinkedList<Variable>, LinkedList<Variable>, Box<Statement>),
     IfThenElse(Expr, Box<Statement>, Box<Statement>),
     Sequence(Box<Statement>, Box<Statement>),
 }

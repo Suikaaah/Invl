@@ -1,8 +1,8 @@
 mod detail;
 
 use crate::parser::detail::{
-    BinOp, Expr, MainProc, MutOp, Proc, ProcId, Program, Statement, Type, TypedVariable, UnrOp,
-    Variable,
+    BinOp, Expr, InnerType, MainProc, MutOp, Proc, ProcId, Program, Statement, Type, TypedVariable,
+    UnrOp, Variable,
 };
 use detail::{concat, Flip};
 use std::mem;
@@ -19,14 +19,6 @@ pub trait Cvt {
 
 trait CvtInd {
     fn cvt_ind(&self, depth: usize) -> String;
-}
-
-trait CvtIndCelled {
-    fn cvt_ind_celled(&self, depth: usize) -> String;
-}
-
-trait CvtCelled {
-    fn cvt_celled(&self) -> String;
 }
 
 trait CvtRef {
@@ -54,11 +46,13 @@ impl CvtMutOp for MutOp {
 
 impl Cvt for Type {
     fn cvt(&self) -> String {
-        match self {
-            Self::Int => "Int".to_string(),
-            Self::Array(n) => format!("Array<{n}>"),
-            Self::List => "List".to_string(),
-        }
+        let r#const = if self.r#const { "const " } else { "" };
+        let inner = match self.inner {
+            InnerType::Int => "Int".to_string(),
+            InnerType::Array(n) => format!("Array<{n}>"),
+            InnerType::List => "List".to_string(),
+        };
+        format!("{}{inner}", r#const)
     }
 }
 
@@ -153,16 +147,12 @@ impl Cvt for MainProc {
                 .unwrap_or("{}".to_string());
             buf += &format!("{spaces}{}{};\n", t_x.cvt(), rhs);
         }
-        buf += &format!("\n{}\n", statement.cvt_ind(1));
-        for (TypedVariable(_, var), _) in decls {
-            buf += &format!("{spaces}auto {0}_ = make_cell({0});\n", var.0);
-        }
-        buf += &format!("{spaces}Cells cells(");
-        buf += &concat(decls, ", ", |(TypedVariable(_, var), _)| {
-            format!("{}_", var.0)
-        });
-        buf += &format!(");\n\n{}", invl.cvt_ind_celled(1));
-        buf += &format!("\n{}\n", statement.flip().cvt_ind(1));
+        buf += &format!(
+            "\n{}\n{}\n{}\n",
+            statement.cvt_ind(1),
+            invl.cvt_ind(1),
+            statement.flip().cvt_ind(1)
+        );
         for (TypedVariable(_, var), _) in decls {
             buf += &format!("{spaces}print(\"{0}\", {0});\n", var.0);
         }
@@ -189,15 +179,13 @@ impl Cvt for Proc {
                 buf += &format!(") {{\n{}}}\n", statement.flip().cvt_ind(1));
             }
             Self::Invl(name, args, statement, invl) => {
-                let mut body = concat(args, ", ", |arg| arg.cvt_ref())
-                    + &format!(") {{\n{}\n", statement.cvt_ind(1));
-                for TypedVariable(_, var) in args {
-                    body += &format!("{spaces}auto {0}_ = make_cell({0});\n", var.0);
-                }
-                body += &format!("{spaces}Cells cells(");
-                body += &concat(args, ", ", |TypedVariable(_, var)| format!("{}_", var.0));
-                body += &format!(");\n\n{}", invl.cvt_ind_celled(1));
-                body += &format!("\n{}}}\n", statement.flip().cvt_ind(1));
+                let body = concat(args, ", ", |arg| arg.cvt_ref())
+                    + &format!(
+                        ") {{\n{}\n{}\n{}}}\n",
+                        statement.cvt_ind(1),
+                        invl.cvt_ind(1),
+                        statement.flip().cvt_ind(1)
+                    );
 
                 buf += &format!("void {}_fwd(", name.cvt());
                 buf += &body;
@@ -312,71 +300,18 @@ impl CvtInd for Statement {
             }
             Self::Skip => String::new(),
             Self::Print(x) => format!("{spaces}print(\"{0}\", {0});\n", x.0),
-            Self::For(_, _, _) => panic!("'for' statement is only allowed in involution"),
-            Self::IfThenElse(_, _, _) => panic!("'if-then-else' statement is only allowed in involution"),
-            Self::Sequence(l, r) => format!("{}{}", l.cvt_ind(depth), r.cvt_ind(depth)),
-        }
-    }
-}
-
-impl CvtIndCelled for Statement {
-    fn cvt_ind_celled(&self, depth: usize) -> String {
-        let spaces = indent(depth);
-        let more_spaces = indent(depth + 1);
-        let even_more_spaces = indent(depth + 2);
-
-        match self {
-            Self::Mut(x, op, e) => {
-                format!(
-                    "{spaces}{}\n{spaces}cells.update();\n",
-                    op.cvt_mut_op(&x.cvt_celled(), &e.cvt_celled())
-                )
-            }
-            Self::IndexedMut(x, i, op, e) => {
-                format!(
-                    "{spaces}{}\n{spaces}cells.update();\n",
-                    op.cvt_mut_op(
-                        &format!("{}_[{}]", x.cvt(), i.cvt_celled()),
-                        &e.cvt_celled(),
-                    )
-                )
-            }
-            either @ (Self::Call(q, args) | Self::Uncall(q, args)) => {
-                let postfix = match either {
-                    Self::Call(_, _) => "fwd",
-                    Self::Uncall(_, _) => "rev",
-                    _ => unreachable!(),
-                };
-                format!("{spaces}{}_{}(", q.cvt(), postfix)
-                    + &concat(args, ", ", |arg| arg.cvt_celled())
-                    + &format!(");\n{spaces}cells.update();\n")
-            }
-            Self::Skip => String::new(),
-            Self::Print(x) => format!("{spaces}print(\"{0}\", {0});\n", x.0),
-            Self::Sequence(l, r) => {
-                format!("{}{}", l.cvt_ind_celled(depth), r.cvt_ind_celled(depth))
-            }
-            Self::For(x, rep, s) => {
-                format!(
-                    "{spaces}{{\n{more_spaces}Cell {0}_;\n{more_spaces}cells.push({0}_);\n",
-                    x.cvt()
-                ) + &format!(
-                    "{more_spaces}for (Int i = 0; i < {}; ++i) {{\n",
-                    rep.cvt_celled()
-                ) + &format!(
-                "{even_more_spaces}{}_ = make_cell(i); {};\n{even_more_spaces}cells.update();\n\n",
-                x.cvt(),
-                x.cvt_celled()
-            ) + &s.cvt_ind_celled(depth + 2)
-                    + &format!("{more_spaces}}}\n{more_spaces}cells.pop();\n{spaces}}}\n")
-            }
+            Self::For(x, v, s) =>
+                format!("{spaces}for (const auto [{}]: std::views::zip({})) {{\n{}{spaces}}}\n",
+                    concat(x, ", ", |item| item.cvt()),
+                    concat(v, ", ", |item| item.cvt()),
+                    s.cvt_ind(depth + 1)),
             Self::IfThenElse(e, s_l, s_r) => format!(
                 "{spaces}if ({}) {{\n{}{spaces}}} else {{\n{}{spaces}}}\n",
-                e.cvt_celled(),
-                s_l.cvt_ind_celled(depth + 1),
-                s_r.cvt_ind_celled(depth + 1),
+                e.cvt(),
+                s_l.cvt_ind(depth + 1),
+                s_r.cvt_ind(depth + 1),
             ),
-            _ => unreachable!(),
+            Self::Sequence(l, r) => format!("{}{}", l.cvt_ind(depth), r.cvt_ind(depth)),
         }
     }
 }
@@ -395,29 +330,6 @@ impl Cvt for Expr {
             Self::Nil => "List{}".to_string(),
             Self::Size(x) => format!("{}.size()", x.cvt()),
             Self::Wrapped(x) => format!("({})", x.cvt()),
-        }
-    }
-}
-
-impl CvtCelled for Variable {
-    fn cvt_celled(&self) -> String {
-        format!("(*{}_)", self.cvt())
-    }
-}
-
-impl CvtCelled for Expr {
-    fn cvt_celled(&self) -> String {
-        match self {
-            Self::Const(x) => x.to_string(),
-            Self::Variable(x) => x.cvt_celled(),
-            Self::Indexed(x, e) => format!("{}_[{}]", x.cvt(), e.cvt_celled()),
-            Self::BinOp(l, op, r) => format!("{} {} {}", l.cvt_celled(), op.cvt(), r.cvt_celled()),
-            Self::UnrOp(op, x) => format!("{}{}", op.cvt(), x.cvt_celled()),
-            Self::Wrapped(x) => format!("({})", x.cvt_celled()),
-            Self::Empty(x) => format!("{}_->empty()", x.cvt()),
-            Self::Top(x) => format!("{}_->front()", x.cvt()),
-            Self::Size(x) => format!("{}_->size()", x.cvt()),
-            _ => unreachable!(),
         }
     }
 }

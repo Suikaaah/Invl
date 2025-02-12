@@ -1,21 +1,11 @@
 invl main()
     list     chars = [25, 39]
     array<5> table = [149, 221, 29, 92, 283]
-    int      count = 0
 with
-    call f(chars, table, count)
+    call f(chars, table)
 
-invl f(list l, array<5> a, int count)
-    if   size(l) < size(a)
-    then count += size(l)
-    else count += size(a)
-    fi   size(l) < size(a)
+invl f(list l, array<5> a)
 with
-    if 2 < count
-    then
-        l[0] ^= a[0]
-    else
-        for i to count
-            l[i] ^= a[i]
-        end
+    for (i, j) in (l, a)
+        i ^= j
     end
