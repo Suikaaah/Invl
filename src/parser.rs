@@ -99,7 +99,10 @@ impl Parser {
 
         let mut list = LinkedList::new();
 
-        while matches!(self.seek_front(), Token::Int | Token::List | Token::Array) {
+        while matches!(
+            self.seek_front(),
+            Token::Const | Token::Int | Token::List | Token::Array
+        ) {
             let t_x = self.parse_typed_variable();
             if let Token::Equal = self.seek_front() {
                 self.pop_front();
@@ -199,6 +202,7 @@ impl Parser {
             match statement {
                 s @ (Statement::Mut(_, MutOp::Xor | MutOp::Swap, _)
                 | Statement::IndexedMut(_, _, MutOp::Xor | MutOp::Swap, _)
+                | Statement::IndexedSwap(_, _, _)
                 | Statement::Call(_, _)
                 | Statement::Uncall(_, _)
                 | Statement::Skip
@@ -236,6 +240,12 @@ impl Parser {
                 let e_l = self.parse_expr(0);
                 self.pop_assert(Token::Then);
                 let s_l = self.parse_statement();
+
+                if let Token::End = self.seek_front() {
+                    self.pop_front();
+                    return Statement::IfThenElse(e_l, Box::new(s_l), Box::new(Statement::Skip));
+                }
+
                 self.pop_assert(Token::Else);
                 let s_r = self.parse_statement();
 
@@ -250,15 +260,23 @@ impl Parser {
             }
             Token::From => {
                 let e_l = self.parse_expr(0);
-                self.pop_assert(Token::Do);
-                let s_l = self.parse_statement();
-                self.pop_assert(Token::Loop);
+                let s_l;
+                match self.pop_front() {
+                    Token::Do => {
+                        s_l = self.parse_statement();
+                        self.pop_assert(Token::Loop);
+                    }
+                    Token::Loop => {
+                        s_l = Statement::Skip;
+                    }
+                    x => panic!("expected do or loop, found {x:?}"),
+                }
                 let s_r = self.parse_statement();
                 self.pop_assert(Token::Until);
                 let e_r = self.parse_expr(0);
                 Statement::FromDoLoopUntil(e_l, Box::new(s_l), Box::new(s_r), e_r)
             }
-            token @ (Token::Push | Token::Pop) => {
+            token @ (Token::PushFront | Token::PushBack | Token::PopFront | Token::PopBack) => {
                 self.pop_assert(Token::LParen);
                 let e = self.parse_expr(0);
                 self.pop_assert(Token::Comma);
@@ -266,8 +284,10 @@ impl Parser {
                 self.pop_assert(Token::RParen);
 
                 match token {
-                    Token::Push => Statement::Push(e, x),
-                    Token::Pop => Statement::Pop(e, x),
+                    Token::PushFront => Statement::PushFront(e, x),
+                    Token::PushBack => Statement::PushBack(e, x),
+                    Token::PopFront => Statement::PopFront(e, x),
+                    Token::PopBack => Statement::PopBack(e, x),
                     _ => unreachable!(),
                 }
             }
@@ -290,7 +310,7 @@ impl Parser {
 
                 if !matches!(self.seek_front(), Token::RParen) {
                     loop {
-                        args.push_back(self.parse_expr(0));
+                        args.push_back(self.parse_variable());
 
                         if let Token::Comma = self.seek_front() {
                             self.pop_front();
@@ -347,6 +367,17 @@ impl Parser {
 
                 Statement::For(x, v, Box::new(s))
             }
+            Token::Swap => {
+                self.pop_assert(Token::LParen);
+                let x = self.parse_variable();
+                self.pop_assert(Token::Comma);
+                let l = self.parse_expr(0);
+                self.pop_assert(Token::Comma);
+                let r = self.parse_expr(0);
+                self.pop_assert(Token::RParen);
+
+                Statement::IndexedSwap(x, l, r)
+            }
             x => panic!("expected statement, found {x:?}"),
         };
 
@@ -355,13 +386,17 @@ impl Parser {
                 Token::Name(_)
                 | Token::If
                 | Token::From
-                | Token::Push
-                | Token::Pop
+                | Token::PushFront
+                | Token::PushBack
+                | Token::PopFront
+                | Token::PopBack
                 | Token::Local
                 | Token::Call
                 | Token::Uncall
                 | Token::Skip
-                | Token::Print,
+                | Token::Print
+                | Token::For
+                | Token::Swap,
             ) => Statement::Sequence(Box::new(first), Box::new(self.parse_statement())),
             _ => first,
         }
@@ -395,14 +430,13 @@ impl Parser {
 
                 Expr::Array(Rc::new(items))
             }
-            token @ (Token::Empty | Token::Top | Token::Size) => {
+            token @ (Token::Empty | Token::Size) => {
                 self.pop_assert(Token::LParen);
                 let x = self.parse_variable();
                 self.pop_assert(Token::RParen);
 
                 match token {
                     Token::Empty => Expr::Empty(x),
-                    Token::Top => Expr::Top(x),
                     Token::Size => Expr::Size(x),
                     _ => unreachable!(),
                 }
@@ -456,7 +490,7 @@ impl Parser {
             Token::PlusEqual => MutOp::Add,
             Token::MinusEqual => MutOp::Sub,
             Token::CaretEqual => MutOp::Xor,
-            Token::Swap => MutOp::Swap,
+            Token::Spaceship => MutOp::Swap,
             x => panic!("expected mut op, found {x:?}"),
         }
     }

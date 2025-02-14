@@ -1,7 +1,8 @@
-use crate::parser::detail::{
-    Expr, MainProc, Proc, ProcId, Program, Statement, TypedVariable, Variable,
-};
-use std::collections::BTreeMap;
+mod detail;
+
+use detail::{CheckMut, HasVariable};
+use crate::parser::detail::{MainProc, Proc, ProcId, Program, Statement, TypedVariable, Variable};
+use std::collections::{BTreeMap, BTreeSet};
 
 type Mutables = BTreeMap<Variable, bool>;
 
@@ -65,86 +66,6 @@ impl Checker {
         }
     }
 
-    fn check_expr(mutables: &mut Mutables, expr: &Expr) {
-        match expr {
-            Expr::Const(_) | Expr::Nil => {}
-            Expr::Variable(x) | Expr::Empty(x) | Expr::Top(x) | Expr::Size(x) => {
-                Self::check_variable(mutables, x)
-            }
-            Expr::Array(l) => {
-                for e in l.as_ref() {
-                    Self::check_expr(mutables, e);
-                }
-            }
-            Expr::Indexed(x, i) => {
-                Self::check_variable(mutables, x);
-                Self::check_expr(mutables, i);
-            }
-            Expr::BinOp(l, _, r) => {
-                Self::check_expr(mutables, l);
-                Self::check_expr(mutables, r);
-            }
-            Expr::UnrOp(_, e) | Expr::Wrapped(e) => Self::check_expr(mutables, e),
-        }
-    }
-
-    fn check_variable(mutables: &mut Mutables, variable: &Variable) {
-        match mutables.get_mut(variable) {
-            None => {}
-            Some(true) => panic!(
-                "mutable variable `{variable:?}` cannot be used more than once in involution"
-            ),
-            Some(x) => *x = true,
-        }
-    }
-
-    fn check_invl(mutables: &mut Mutables, invl: &Statement) {
-        match invl {
-            Statement::Mut(x, _, e) => {
-                Self::check_variable(mutables, x);
-                Self::check_expr(mutables, e);
-            }
-            Statement::IndexedMut(x, i, _, e) => {
-                Self::check_variable(mutables, x);
-                Self::check_expr(mutables, i);
-                Self::check_expr(mutables, e);
-            }
-            Statement::Call(_, es) | Statement::Uncall(_, es) => {
-                for e in es {
-                    Self::check_expr(mutables, e);
-                }
-            }
-            Statement::Skip | Statement::Print(_) => {}
-            Statement::IfThenElse(e, s_l, s_r) => {
-                Self::check_expr(mutables, e);
-                let mut cloned = mutables.clone();
-                Self::check_invl(&mut cloned, s_l);
-                Self::check_invl(mutables, s_r);
-                for ((_, m), (_, c)) in mutables.iter_mut().zip(cloned) {
-                    *m |= c;
-                }
-            }
-            Statement::For(xs_l, xs_r, s) => {
-                let cloned = mutables.clone();
-
-                for (l, r) in xs_l.iter().zip(xs_r) {
-                    Self::check_variable(mutables, r);
-                    if mutables.get(r).is_some() {
-                        mutables.insert(l.clone(), false);
-                    }
-                }
-                Self::check_invl(mutables, s);
-
-                *mutables = cloned;
-            }
-            Statement::Sequence(l, r) => {
-                Self::check_invl(mutables, l);
-                Self::check_invl(mutables, r);
-            }
-            _ => unreachable!(),
-        }
-    }
-
     fn mutables<'a, I>(variables: I) -> Mutables
     where
         I: IntoIterator<Item = &'a TypedVariable>,
@@ -160,18 +81,57 @@ impl Checker {
         mutables
     }
 
+    fn check_dup(statement: &Statement) {
+        match statement {
+            Statement::Mut(x, _, e) | Statement::IndexedMut(x, _, _, e) if e.has_variable(x) => {
+                panic!("variable `{}` appears on the both sides", x.0)
+            }
+            Statement::Call(_, xs) | Statement::Uncall(_, xs) => {
+                let mut set = BTreeSet::new();
+                for x in xs {
+                    match set.get(x) {
+                        None => {
+                            set.insert(x);
+                        }
+                        Some(_) => panic!("variable `{}` is passed more than once", x.0),
+                    }
+                }
+            }
+            Statement::IfThenElseFi(_, s_l, s_r, _)
+            | Statement::FromDoLoopUntil(_, s_l, s_r, _)
+            | Statement::IfThenElse(_, s_l, s_r)
+            | Statement::Sequence(s_l, s_r) => {
+                Self::check_dup(s_l);
+                Self::check_dup(s_r);
+            }
+            Statement::LocalDelocal(_, _, s, _, _) | Statement::For(_, _, s) => Self::check_dup(s),
+            _ => {}
+        }
+    }
+
     fn check_main(&self, main: &MainProc) {
-        let MainProc(decls, _, invl) = main;
+        let MainProc(decls, statement, invl) = main;
         self.ban_inj_call(invl);
+
+        Self::check_dup(statement);
+        Self::check_dup(invl);
+
         let mut mutables = Self::mutables(decls.iter().map(|(t_x, _)| t_x));
-        Self::check_invl(&mut mutables, invl);
+        invl.check_mut(&mut mutables);
     }
 
     fn check_proc(&self, proc: &Proc) {
-        if let Proc::Invl(_, params, _, invl) = proc {
-            self.ban_inj_call(invl);
-            let mut mutables = Self::mutables(params);
-            Self::check_invl(&mut mutables, invl)
+        match proc {
+            Proc::Invl(_, params, statement, invl) => {
+                self.ban_inj_call(invl);
+                Self::check_dup(statement);
+                Self::check_dup(invl);
+
+                let mut mutables = Self::mutables(params);
+                invl.check_mut(&mut mutables);
+            }
+            Proc::Inj(_, _, statement) => Self::check_dup(statement),
+            Proc::Mat(_, _) => {}
         }
     }
 }

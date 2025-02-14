@@ -268,7 +268,7 @@ impl CvtInd for Statement {
         match self {
             Self::Mut(x, op, e) => spaces + &op.cvt_mut_op(&x.cvt(), &e.cvt()) + "\n",
             Self::IndexedMut(x, i, op, e) => {
-                spaces + &op.cvt_mut_op(&format!("{}[{}]", x.cvt(), i.cvt()), &e.cvt()) + "\n"
+                spaces + &op.cvt_mut_op(&format!("index({}, {})", x.cvt(), i.cvt()), &e.cvt()) + "\n"
             }
             Self::IfThenElseFi(e_l, s_l, s_r, e_r) => format!(
                 "{spaces}if ({0}) {{\n{1}{more_spaces}assert({3});\n{spaces}}} else {{\n{2}{more_spaces}assert(!({3}));\n{spaces}}}\n",
@@ -285,11 +285,23 @@ impl CvtInd for Statement {
                 e_r.cvt(),
                 s_l.cvt_ind(depth + 1),
             ),
-            Self::Push(l, r) => format!("{spaces}{0}.push_front({1});\n{spaces}{1} = 0;\n", r.cvt(), l.cvt()),
-            Self::Pop(l, r) => format!(
+            Self::PushFront(l, r) => format!("{spaces}{0}.push_front({1});\n{spaces}{1} = 0;\n", r.cvt(), l.cvt()),
+            Self::PushBack(l, r) => format!("{spaces}{0}.push_back({1});\n{spaces}{1} = 0;\n", r.cvt(), l.cvt()),
+            Self::PopFront(l, r) => format!(
                 "{spaces}assert({1} == 0);\n{spaces}{1} = {0}.front();\n{spaces}{0}.pop_front();\n",
                 r.cvt(),
                 l.cvt()
+            ),
+            Self::PopBack(l, r) => format!(
+                "{spaces}assert({1} == 0);\n{spaces}{1} = {0}.back();\n{spaces}{0}.pop_back();\n",
+                r.cvt(),
+                l.cvt()
+            ),
+            Self::IndexedSwap(x, l, r) => format!(
+                "{spaces}swap(index({0}, {1}), index({0}, {2}));\n",
+                x.cvt(),
+                l.cvt(),
+                r.cvt(),
             ),
             Self::LocalDelocal(tx_l, e_l, s, tx_r, e_r) => format!(
                 "{spaces}{{\n{more_spaces}{} = {};\n{}{more_spaces}assert({} == {});\n{spaces}}}\n",
@@ -334,11 +346,10 @@ impl Cvt for Expr {
             Self::Const(x) => x.to_string(),
             Self::Variable(x) => x.cvt(),
             Self::Array(x) => format!("{{{}}}", concat(x.as_ref(), ", ", |item| item.cvt())),
-            Self::Indexed(x, e) => format!("{}[{}]", x.cvt(), e.cvt()),
+            Self::Indexed(x, e) => format!("index({}, {})", x.cvt(), e.cvt()),
             Self::BinOp(l, op, r) => format!("{} {} {}", l.cvt(), op.cvt(), r.cvt()),
             Self::UnrOp(op, x) => format!("{}{}", op.cvt(), x.cvt()),
             Self::Empty(x) => format!("{}.empty()", x.cvt()),
-            Self::Top(x) => format!("{}.front()", x.cvt()),
             Self::Nil => "List{}".to_string(),
             Self::Size(x) => format!("{}.size()", x.cvt()),
             Self::Wrapped(x) => format!("({})", x.cvt()),

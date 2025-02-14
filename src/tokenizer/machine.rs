@@ -46,7 +46,7 @@ impl Machine {
                 push("!=", Token::ExclamationEqual);
                 push("<=", Token::LAngleBracketEqual);
                 push(">=", Token::RAngleBracketEqual);
-                push("<=>", Token::Swap);
+                push("<=>", Token::Spaceship);
                 push("if", Token::If);
                 push("then", Token::Then);
                 push("else", Token::Else);
@@ -55,15 +55,16 @@ impl Machine {
                 push("do", Token::Do);
                 push("loop", Token::Loop);
                 push("until", Token::Until);
-                push("push", Token::Push);
-                push("pop", Token::Pop);
+                push("push_front", Token::PushFront);
+                push("push_back", Token::PushBack);
+                push("pop_front", Token::PopFront);
+                push("pop_back", Token::PopBack);
                 push("local", Token::Local);
                 push("delocal", Token::Delocal);
                 push("call", Token::Call);
                 push("uncall", Token::Uncall);
                 push("skip", Token::Skip);
                 push("empty", Token::Empty);
-                push("top", Token::Top);
                 push("!", Token::Exclamation);
                 push(",", Token::Comma);
                 push("nil", Token::Nil);
@@ -75,6 +76,7 @@ impl Machine {
                 push("in", Token::In);
                 push("end", Token::End);
                 push("const", Token::Const);
+                push("swap", Token::Swap);
                 retval
             };
         }

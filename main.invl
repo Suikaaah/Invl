@@ -1,12 +1,8 @@
 invl main()
-    list l
-    list r
+    list l = [2, 5, 9, 3, 4]
+    const int i = 0
+    const int j = 1
 with
-    l <=> r
+    call f(i, j)
 
-invl s_x[1 0; 0 -1] 
-invl s_y[-1 0; 0 1] 
-invl id_2[1 0; 0 1] 
-invl negate[-1]
-invl id_1[1]
-invl c_minus_x[1 0; 1 -1]
+invl f[1 0; 0 1]

@@ -8,8 +8,9 @@
 #include <string>
 #include <utility>
 #include <ranges>
+#include <boost/multiprecision/cpp_int.hpp>
 
-using Int = int;
+using Int = boost::multiprecision::cpp_int;
 using List = std::deque<Int>;
 template <std::size_t N>
 using Array = std::array<Int, N>;
@@ -35,6 +36,16 @@ std::ostream& operator<<(std::ostream& os, const T& l) {
         os << std::exchange(delim, ", ") << x;
     }
     return os << ']';
+}
+
+template <class T>
+const Int& index(const T& l, const Int& i) {
+    return l[i.convert_to<std::size_t>()];
+}
+
+template <class T>
+Int& index(T& l, const Int& i) {
+    return l[i.convert_to<std::size_t>()];
 }
 
 template <class T> void print(const char* name, const T& target) {

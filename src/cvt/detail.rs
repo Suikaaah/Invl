@@ -24,8 +24,11 @@ impl Flip for Statement {
                 Box::new(s_r.flip()),
                 e_l.clone(),
             ),
-            Self::Push(l, r) => Self::Pop(l.clone(), r.clone()),
-            Self::Pop(l, r) => Self::Push(l.clone(), r.clone()),
+            Self::PushFront(l, r) => Self::PopFront(l.clone(), r.clone()),
+            Self::PushBack(l, r) => Self::PopBack(l.clone(), r.clone()),
+            Self::PopFront(l, r) => Self::PushFront(l.clone(), r.clone()),
+            Self::PopBack(l, r) => Self::PushFront(l.clone(), r.clone()),
+            Self::IndexedSwap(x, l, r) => Self::IndexedSwap(x.clone(), l.clone(), r.clone()),
             Self::LocalDelocal(tx_l, e_l, s, tx_r, e_r) => Self::LocalDelocal(
                 tx_r.clone(),
                 e_r.clone(),
