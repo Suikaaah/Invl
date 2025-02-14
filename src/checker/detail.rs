@@ -1,5 +1,6 @@
 use crate::checker::Mutables;
 use crate::parser::detail::{Expr, Statement, Variable};
+use crate::parser::r#for::For;
 
 pub trait CheckMut {
     fn check_mut(&self, mutables: &mut Mutables);
@@ -72,24 +73,33 @@ impl CheckMut for Statement {
                     *m |= c;
                 }
             }
-            Self::For(xs_l, xs_r, s) => {
+            Self::For(For {
+                vars,
+                containers,
+                statement,
+            }) => {
                 let cloned = mutables.clone();
 
-                for r in xs_r {
-                    r.check_mut(mutables);
+                for (c, i) in containers {
+                    c.check_mut(mutables);
+                    if let Some(i) = i {
+                        i.check_mut(mutables);
+                    }
                 }
 
                 for (_, b) in mutables.iter_mut() {
                     *b = true;
                 }
 
-                for (l, r) in xs_l.iter().zip(xs_r) {
-                    if mutables.get(r).is_some() {
-                        mutables.insert(l.clone(), false);
+                for (vs, (c, _)) in vars.iter().zip(containers) {
+                    if mutables.get(c).is_some() {
+                        for v in vs {
+                            mutables.insert(v.clone(), false);
+                        }
                     }
                 }
 
-                s.check_mut(mutables);
+                statement.check_mut(mutables);
 
                 *mutables = cloned;
             }

@@ -1,7 +1,10 @@
 mod detail;
 
+use crate::parser::{
+    detail::{MainProc, Proc, ProcId, Program, Statement, TypedVariable, Variable},
+    r#for::For,
+};
 use detail::{CheckMut, HasVariable};
-use crate::parser::detail::{MainProc, Proc, ProcId, Program, Statement, TypedVariable, Variable};
 use std::collections::{BTreeMap, BTreeSet};
 
 type Mutables = BTreeMap<Variable, bool>;
@@ -57,7 +60,7 @@ impl Checker {
     fn ban_inj_call(&self, invl: &Statement) {
         match invl {
             Statement::Call(id, _) | Statement::Uncall(id, _) => self.assert_invl(id),
-            Statement::For(_, _, s) => self.ban_inj_call(s),
+            Statement::For(For { statement, .. }) => self.ban_inj_call(statement),
             Statement::IfThenElse(_, s_l, s_r) | Statement::Sequence(s_l, s_r) => {
                 self.ban_inj_call(s_l);
                 self.ban_inj_call(s_r);
@@ -104,7 +107,9 @@ impl Checker {
                 Self::check_dup(s_l);
                 Self::check_dup(s_r);
             }
-            Statement::LocalDelocal(_, _, s, _, _) | Statement::For(_, _, s) => Self::check_dup(s),
+            Statement::LocalDelocal(_, _, s, _, _) | Statement::For(For { statement: s, .. }) => {
+                Self::check_dup(s)
+            }
             _ => {}
         }
     }

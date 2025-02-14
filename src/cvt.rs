@@ -1,8 +1,11 @@
 mod detail;
 
-use crate::parser::detail::{
-    BinOp, Expr, InnerType, MainProc, MutOp, Proc, ProcId, Program, Statement, Type, TypedVariable,
-    UnrOp, Variable,
+use crate::parser::{
+    detail::{
+        BinOp, Expr, InnerType, MainProc, MutOp, Proc, ProcId, Program, Statement, Type,
+        TypedVariable, UnrOp, Variable,
+    },
+    r#for::For,
 };
 use detail::{concat, Flip};
 use std::mem;
@@ -324,11 +327,48 @@ impl CvtInd for Statement {
             }
             Self::Skip => String::new(),
             Self::Print(x) => format!("{spaces}print(\"{0}\", {0});\n", x.0),
-            Self::For(x, v, s) =>
-                format!("{spaces}for (const auto [{}]: std::views::zip({})) {{\n{}{spaces}}}\n",
-                    concat(x, ", ", |item| item.cvt()),
-                    concat(v, ", ", |item| item.cvt()),
-                    s.cvt_ind(depth + 1)),
+            Self::For(For{vars, containers, statement}) => {
+                let mut buf =
+                    format!("{spaces}std::size_t ")
+                    + &concat(containers, ", ", |(x, _)| format!("i_{}{{}}", x.0))
+                    + ";\n";
+
+                for (x, i) in containers {
+                    let i = match i {
+                        Some(i) => i,
+                        None => continue,
+                    };
+
+                    buf += &format!(
+                        "{spaces}assert_valid_perm({}, {});\n",
+                        x.0, i.0
+                    );
+                }
+
+                buf += &format!("{spaces}while ({}) {{\n",
+                    concat(containers.iter().zip(vars), " && ", |((x, _), v)| {
+                        format!("i_{0} + {1} < {0}.size()", x.0, v.len() - 1)
+                    })
+                );
+
+                for ((x, i), vs) in containers.iter().zip(vars) {
+                    let i = match i {
+                        None => format!("i_{}++", x.0),
+                        Some(i) => format!("{}[i_{}++]", i.0, x.0),
+                    };
+
+                    for v in vs {
+                        buf += &format!(
+                            "{more_spaces}auto& {} = index({}, {});\n",
+                            v.0, x.0, i
+                        );
+                    }
+                }
+
+                buf += &format!("\n{}", statement.cvt_ind(depth + 1));
+                buf += &format!("{spaces}}}\n");
+                buf
+            }
             Self::IfThenElse(e, s_l, s_r) => format!(
                 "{spaces}if ({}) {{\n{}{spaces}}} else {{\n{}{spaces}}}\n",
                 e.cvt(),

@@ -1,4 +1,5 @@
 pub mod detail;
+pub mod r#for;
 pub mod mat;
 
 use crate::{
@@ -10,6 +11,7 @@ use crate::{
 };
 use detail::{Direction, InnerType};
 use mat::InvlMat;
+use r#for::For;
 use std::{collections::LinkedList, rc::Rc};
 
 #[derive(Debug)]
@@ -208,7 +210,7 @@ impl Parser {
                 | Statement::Skip
                 | Statement::Print(_)
                 | Statement::IfThenElse(_, _, _)
-                | Statement::For(_, _, _)) => s,
+                | Statement::For(_)) => s,
                 Statement::Sequence(l, r) => {
                     Statement::Sequence(Box::new(check(*l)), Box::new(check(*r)))
                 }
@@ -217,6 +219,38 @@ impl Parser {
         }
 
         check(self.parse_statement())
+    }
+
+    fn parse_var_pack(&mut self) -> LinkedList<Variable> {
+        let mut l = LinkedList::new();
+        if let Token::LBracket = self.seek_front() {
+            self.pop_front();
+            loop {
+                l.push_back(self.parse_variable());
+                match self.pop_front() {
+                    Token::Comma => {}
+                    Token::RBracket => break,
+                    x => panic!("unexpected token found in var pack: {x:?}"),
+                }
+            }
+        } else {
+            l.push_back(self.parse_variable());
+        }
+
+        l
+    }
+
+    fn parse_maybe_indexed(&mut self) -> (Variable, Option<Variable>) {
+        let x = self.parse_variable();
+        let i = if let Token::LBracket = self.seek_front() {
+            self.pop_front();
+            let i = self.parse_variable();
+            self.pop_assert(Token::RBracket);
+            Some(i)
+        } else {
+            None
+        };
+        (x, i)
     }
 
     fn parse_statement(&mut self) -> Statement {
@@ -243,19 +277,19 @@ impl Parser {
 
                 if let Token::End = self.seek_front() {
                     self.pop_front();
-                    return Statement::IfThenElse(e_l, Box::new(s_l), Box::new(Statement::Skip));
-                }
+                    Statement::IfThenElse(e_l, Box::new(s_l), Box::new(Statement::Skip))
+                } else {
+                    self.pop_assert(Token::Else);
+                    let s_r = self.parse_statement();
 
-                self.pop_assert(Token::Else);
-                let s_r = self.parse_statement();
-
-                match self.pop_front() {
-                    Token::Fi => {
-                        let e_r = self.parse_expr(0);
-                        Statement::IfThenElseFi(e_l, Box::new(s_l), Box::new(s_r), e_r)
+                    match self.pop_front() {
+                        Token::Fi => {
+                            let e_r = self.parse_expr(0);
+                            Statement::IfThenElseFi(e_l, Box::new(s_l), Box::new(s_r), e_r)
+                        }
+                        Token::End => Statement::IfThenElse(e_l, Box::new(s_l), Box::new(s_r)),
+                        x => panic!("expected fi or end, found {x:?}"),
                     }
-                    Token::End => Statement::IfThenElse(e_l, Box::new(s_l), Box::new(s_r)),
-                    x => panic!("expected fi or end, found {x:?}"),
                 }
             }
             Token::From => {
@@ -278,16 +312,16 @@ impl Parser {
             }
             token @ (Token::PushFront | Token::PushBack | Token::PopFront | Token::PopBack) => {
                 self.pop_assert(Token::LParen);
-                let e = self.parse_expr(0);
+                let l = self.parse_variable();
                 self.pop_assert(Token::Comma);
-                let x = self.parse_variable();
+                let r = self.parse_variable();
                 self.pop_assert(Token::RParen);
 
                 match token {
-                    Token::PushFront => Statement::PushFront(e, x),
-                    Token::PushBack => Statement::PushBack(e, x),
-                    Token::PopFront => Statement::PopFront(e, x),
-                    Token::PopBack => Statement::PopBack(e, x),
+                    Token::PushFront => Statement::PushFront(l, r),
+                    Token::PushBack => Statement::PushBack(l, r),
+                    Token::PopFront => Statement::PopFront(l, r),
+                    Token::PopBack => Statement::PopBack(l, r),
                     _ => unreachable!(),
                 }
             }
@@ -336,36 +370,48 @@ impl Parser {
                 Statement::Print(x)
             }
             Token::For => {
-                let mut build = |first| {
-                    let mut l = LinkedList::new();
-                    if let Token::LParen = self.seek_front() {
-                        self.pop_front();
-                        loop {
-                            l.push_back(self.parse_variable());
-                            match self.pop_front() {
-                                Token::Comma => {}
-                                Token::RParen => break,
-                                x => panic!("unexpected token found in param list: {x:?}"),
-                            }
+                let mut vars = LinkedList::new();
+                let mut containers = LinkedList::new();
+                if let Token::LParen = self.seek_front() {
+                    self.pop_front();
+                    loop {
+                        vars.push_back(self.parse_var_pack());
+                        match self.pop_front() {
+                            Token::Comma => {}
+                            Token::RParen => break,
+                            x => panic!("unexpected token found in param list: {x:?}"),
                         }
-                    } else {
-                        l.push_back(self.parse_variable());
                     }
+                } else {
+                    vars.push_back(self.parse_var_pack());
+                }
 
-                    if first {
-                        self.pop_assert(Token::In);
+                self.pop_assert(Token::In);
+
+                if let Token::LParen = self.seek_front() {
+                    self.pop_front();
+                    loop {
+                        containers.push_back(self.parse_maybe_indexed());
+                        match self.pop_front() {
+                            Token::Comma => {}
+                            Token::RParen => break,
+                            x => panic!("unexpected token found in param list: {x:?}"),
+                        }
                     }
+                } else {
+                    containers.push_back(self.parse_maybe_indexed());
+                }
 
-                    l
-                };
+                assert_eq!(vars.len(), containers.len(), "unmatched params");
 
-                let x = build(true);
-                let v = build(false);
-                assert!(x.len() == v.len(), "unmatched variables");
                 let s = self.parse_statement();
                 self.pop_assert(Token::End);
 
-                Statement::For(x, v, Box::new(s))
+                Statement::For(For {
+                    vars,
+                    containers,
+                    statement: Box::new(s),
+                })
             }
             Token::Swap => {
                 self.pop_assert(Token::LParen);
@@ -416,19 +462,19 @@ impl Parser {
 
                 if let Token::RBracket = self.seek_front() {
                     self.pop_front();
-                    return Expr::Array(Rc::new(items));
-                }
-
-                loop {
-                    items.push_back(self.parse_expr(0));
-                    match self.pop_front() {
-                        Token::Comma => {}
-                        Token::RBracket => break,
-                        x => panic!("unexpected token found in array: {x:?}"),
+                    Expr::Array(Rc::new(items))
+                } else {
+                    loop {
+                        items.push_back(self.parse_expr(0));
+                        match self.pop_front() {
+                            Token::Comma => {}
+                            Token::RBracket => break,
+                            x => panic!("unexpected token found in array: {x:?}"),
+                        }
                     }
-                }
 
-                Expr::Array(Rc::new(items))
+                    Expr::Array(Rc::new(items))
+                }
             }
             token @ (Token::Empty | Token::Size) => {
                 self.pop_assert(Token::LParen);

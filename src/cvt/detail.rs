@@ -40,7 +40,7 @@ impl Flip for Statement {
             Self::Uncall(q, args) => Self::Call(q.clone(), args.clone()),
             Self::Skip => Self::Skip,
             Self::Print(x) => Self::Print(x.clone()),
-            Self::For(_, _, _) | Self::IfThenElse(_, _, _) => unreachable!(),
+            Self::For(_) | Self::IfThenElse(_, _, _) => unreachable!(),
             Self::Sequence(l, r) => Self::Sequence(Box::new(r.flip()), Box::new(l.flip())),
         }
     }
@@ -57,11 +57,10 @@ impl Flip for MutOp {
     }
 }
 
-pub fn concat<'a, T, I, F>(list: I, delim: &str, mut converter: F) -> String
+pub fn concat<T, I, F>(list: I, delim: &str, mut converter: F) -> String
 where
-    T: 'a,
-    I: IntoIterator<Item = &'a T>,
-    F: FnMut(&T) -> String,
+    I: IntoIterator<Item = T>,
+    F: FnMut(T) -> String,
 {
     let mut buf = String::new();
     let mut d = "";

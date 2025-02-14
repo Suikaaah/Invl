@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 #include <ranges>
+#include <algorithm>
 #include <boost/multiprecision/cpp_int.hpp>
 
 using Int = boost::multiprecision::cpp_int;
@@ -55,6 +56,91 @@ template <class T> void print(const char* name, const T& target) {
 template <class T>
 void swap(T&& l, T&& r) {
     std::swap(std::forward<T>(l), std::forward<T>(r));
+}
+
+template <class T>
+bool is_valid_perm(const T& l) {
+    T copied = l;
+    std::sort(copied.begin(), copied.end());
+    for (std::size_t i{}; i < copied.size(); ++i) {
+        if (i != copied[i]) return false;
+    }
+
+    return true;
+}
+
+template <class T, class U>
+void assert_valid_perm(const T& c, const U& p) {
+    assert(("not a valid permutation", c.size() == p.size() && is_valid_perm(p)));
+}
+
+// inj iota(const int n, list dst)
+//     local int i = 0
+//         from i = 0
+//         loop
+//             local int x = i
+//                 push_back(x, dst)
+//             delocal int x = 0
+//             i += 1
+//         until i = n
+//     delocal int i = n
+// 
+// inj indices(const list src, list dst)
+//     local const int n = size(src)
+//         call iota(n, dst)
+//     delocal const int n = size(src)
+
+void iota_fwd(const Int& n, List& dst) {
+    {
+        Int i = 0;
+        assert(i == 0);
+        while (!(i == n)) {
+            {
+                Int x = i;
+                dst.push_back(x);
+                x = 0;
+                assert(x == 0);
+            }
+            i += 1;
+            assert(!(i == 0));
+        }
+        assert(i == n);
+    }
+}
+
+void iota_rev(const Int& n, List& dst) {
+    {
+        Int i = n;
+        assert(i == n);
+        while (!(i == 0)) {
+            i -= 1;
+            {
+                Int x = 0;
+                assert(x == 0);
+                x = dst.back();
+                dst.pop_back();
+                assert(x == i);
+            }
+            assert(!(i == n));
+        }
+        assert(i == 0);
+    }
+}
+
+void indices_fwd(const List& src, List& dst) {
+    {
+        const Int n = src.size();
+        iota_fwd(n, dst);
+        assert(n == src.size());
+    }
+}
+
+void indices_rev(const List& src, List& dst) {
+    {
+        const Int n = src.size();
+        iota_rev(n, dst);
+        assert(n == src.size());
+    }
 }
 
 #endif

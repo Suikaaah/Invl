@@ -1,4 +1,4 @@
-use crate::parser::mat::InvlMat;
+use crate::parser::{mat::InvlMat, r#for::For};
 use std::{collections::LinkedList, rc::Rc};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -93,16 +93,16 @@ pub enum Statement {
     IfThenElseFi(Expr, Box<Statement>, Box<Statement>, Expr),
     FromDoLoopUntil(Expr, Box<Statement>, Box<Statement>, Expr),
     IndexedSwap(Variable, Expr, Expr),
-    PushFront(Expr, Variable),
-    PushBack(Expr, Variable),
-    PopFront(Expr, Variable),
-    PopBack(Expr, Variable),
+    PushFront(Variable, Variable),
+    PushBack(Variable, Variable),
+    PopFront(Variable, Variable),
+    PopBack(Variable, Variable),
     LocalDelocal(TypedVariable, Expr, Box<Statement>, TypedVariable, Expr),
     Call(ProcId, LinkedList<Variable>),
     Uncall(ProcId, LinkedList<Variable>),
     Skip,
     Print(Variable),
-    For(LinkedList<Variable>, LinkedList<Variable>, Box<Statement>),
+    For(For),
     IfThenElse(Expr, Box<Statement>, Box<Statement>),
     Sequence(Box<Statement>, Box<Statement>),
 }

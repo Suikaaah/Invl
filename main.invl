@@ -1,8 +1,21 @@
 invl main()
-    list l = [2, 5, 9, 3, 4]
-    const int i = 0
-    const int j = 1
+    list l = [3, 9]
+    list temp
 with
-    call f(i, j)
+    call swap_front_and_back(l, temp)
 
-invl f[1 0; 0 1]
+invl swap_front_and_back(list l, list perm)
+    call indices(l, perm)
+    swap(perm, 1, size(perm) - 1)
+with
+    call swap_front_and_back_impl(l, perm)
+
+invl swap_front_and_back_impl(list l, const list perm)
+with
+    for ([x, y], [p, q]) in (l[perm], perm)
+        if
+            p = 0 || q = 0
+        then
+            x <=> y
+        end
+    end

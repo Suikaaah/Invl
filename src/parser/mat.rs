@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{fmt::{Debug, Display}, mem, ops::Deref};
 
 #[derive(Debug)]
 pub struct SquareMat {
@@ -71,6 +71,23 @@ impl SquareMat {
     }
 }
 
+impl Display for SquareMat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[")?;
+        let mut semicolon = "";
+        for row in 0..self.size {
+            let mut space = "";
+            write!(f, "{}", mem::replace(&mut semicolon, "; "))?;
+            for col in 0..self.size {
+                write!(f, "{}{}", mem::replace(&mut space, " "), self.get(row, col))?;
+            }
+        }
+        write!(f, "]")?;
+
+        Ok(())
+    }
+}
+
 #[derive(Debug)]
 pub struct InvlMat {
     mat: SquareMat,
@@ -82,7 +99,7 @@ impl InvlMat {
         if mat.square().is_id() {
             Ok(Self { mat })
         } else {
-            Err(format!("{:?} is not involutory", mat.data))
+            Err(format!("{} is not involutory", mat))
         }
     }
 }
