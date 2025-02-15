@@ -89,6 +89,9 @@ impl Checker {
             Statement::Mut(x, _, e) | Statement::IndexedMut(x, _, _, e) if e.has_variable(x) => {
                 panic!("variable `{}` appears on the both sides", x.0)
             }
+            Statement::IndexedSwap(x, l, r) if l.has_variable(x) || r.has_variable(x) => {
+                panic!("variable `{}` appears as a container and as an index", x.0)
+            }
             Statement::Call(_, xs) | Statement::Uncall(_, xs) => {
                 let mut set = BTreeSet::new();
                 for x in xs {

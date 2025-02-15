@@ -3,7 +3,7 @@ mod detail;
 use crate::parser::{
     detail::{
         BinOp, Expr, InnerType, MainProc, MutOp, Proc, ProcId, Program, Statement, Type,
-        TypedVariable, UnrOp, Variable,
+        TypedVariable, UnrOp, Variable, VariableOrLiteral,
     },
     r#for::For,
 };
@@ -288,18 +288,22 @@ impl CvtInd for Statement {
                 e_r.cvt(),
                 s_l.cvt_ind(depth + 1),
             ),
-            Self::PushFront(l, r) => format!("{spaces}{0}.push_front({1});\n{spaces}{1} = 0;\n", r.cvt(), l.cvt()),
-            Self::PushBack(l, r) => format!("{spaces}{0}.push_back({1});\n{spaces}{1} = 0;\n", r.cvt(), l.cvt()),
-            Self::PopFront(l, r) => format!(
-                "{spaces}assert({1} == 0);\n{spaces}{1} = {0}.front();\n{spaces}{0}.pop_front();\n",
-                r.cvt(),
-                l.cvt()
-            ),
-            Self::PopBack(l, r) => format!(
-                "{spaces}assert({1} == 0);\n{spaces}{1} = {0}.back();\n{spaces}{0}.pop_back();\n",
-                r.cvt(),
-                l.cvt()
-            ),
+            Self::PushFront(l, r) => match l {
+                VariableOrLiteral::Literal(n) => format!("{spaces}{}.push_front({n});\n", r.cvt()),
+                VariableOrLiteral::Variable(x) => format!("{spaces}{0}.push_front({1});\n{spaces}{1} = 0;\n", r.cvt(), x.cvt()),
+            }
+            Self::PushBack(l, r) => match l {
+                VariableOrLiteral::Literal(n) => format!("{spaces}{}.push_back({n});\n", r.cvt()),
+                VariableOrLiteral::Variable(x) => format!("{spaces}{0}.push_back({1});\n{spaces}{1} = 0;\n", r.cvt(), x.cvt()),
+            }
+            Self::PopFront(l, r) => match l {
+                VariableOrLiteral::Literal(n) => format!("{spaces}assert({1} == {0}.front());\n{spaces}{0}.pop_front();\n", r.cvt(), n),
+                VariableOrLiteral::Variable(x) => format!("{spaces}assert({1} == 0);\n{spaces}{1} = {0}.front();\n{spaces}{0}.pop_front();\n", r.cvt(), x.cvt()),
+            }
+            Self::PopBack(l, r) => match l {
+                VariableOrLiteral::Literal(n) => format!("{spaces}assert({1} == {0}.back());\n{spaces}{0}.pop_back();\n", r.cvt(), n),
+                VariableOrLiteral::Variable(x) => format!("{spaces}assert({1} == 0);\n{spaces}{1} = {0}.back();\n{spaces}{0}.pop_back();\n", r.cvt(), x.cvt()),
+            }
             Self::IndexedSwap(x, l, r) => format!(
                 "{spaces}swap(index({0}, {1}), index({0}, {2}));\n",
                 x.cvt(),
@@ -369,12 +373,20 @@ impl CvtInd for Statement {
                 buf += &format!("{spaces}}}\n");
                 buf
             }
-            Self::IfThenElse(e, s_l, s_r) => format!(
-                "{spaces}if ({}) {{\n{}{spaces}}} else {{\n{}{spaces}}}\n",
-                e.cvt(),
-                s_l.cvt_ind(depth + 1),
-                s_r.cvt_ind(depth + 1),
-            ),
+            Self::IfThenElse(e, s_l, s_r) => if let Statement::Skip = s_r.as_ref() {
+                format!(
+                    "{spaces}if ({}) {{\n{}{spaces}}}\n",
+                    e.cvt(),
+                    s_l.cvt_ind(depth + 1),
+                )
+            } else {
+                format!(
+                    "{spaces}if ({}) {{\n{}{spaces}}} else {{\n{}{spaces}}}\n",
+                    e.cvt(),
+                    s_l.cvt_ind(depth + 1),
+                    s_r.cvt_ind(depth + 1),
+                )
+            }
             Self::Sequence(l, r) => format!("{}{}", l.cvt_ind(depth), r.cvt_ind(depth)),
         }
     }

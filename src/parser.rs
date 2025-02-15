@@ -9,7 +9,7 @@ use crate::{
     },
     tokenizer::{detail::Token, TokenList},
 };
-use detail::{Direction, InnerType};
+use detail::{Direction, InnerType, VariableOrLiteral};
 use mat::InvlMat;
 use r#for::For;
 use std::{collections::LinkedList, rc::Rc};
@@ -275,21 +275,27 @@ impl Parser {
                 self.pop_assert(Token::Then);
                 let s_l = self.parse_statement();
 
-                if let Token::End = self.seek_front() {
-                    self.pop_front();
-                    Statement::IfThenElse(e_l, Box::new(s_l), Box::new(Statement::Skip))
-                } else {
-                    self.pop_assert(Token::Else);
-                    let s_r = self.parse_statement();
-
-                    match self.pop_front() {
-                        Token::Fi => {
-                            let e_r = self.parse_expr(0);
-                            Statement::IfThenElseFi(e_l, Box::new(s_l), Box::new(s_r), e_r)
-                        }
-                        Token::End => Statement::IfThenElse(e_l, Box::new(s_l), Box::new(s_r)),
-                        x => panic!("expected fi or end, found {x:?}"),
+                match self.pop_front() {
+                    Token::End => {
+                        Statement::IfThenElse(e_l, Box::new(s_l), Box::new(Statement::Skip))
                     }
+                    Token::Fi => {
+                        let e_r = self.parse_expr(0);
+                        Statement::IfThenElseFi(e_l, Box::new(s_l), Box::new(Statement::Skip), e_r)
+                    }
+                    Token::Else => {
+                        let s_r = self.parse_statement();
+
+                        match self.pop_front() {
+                            Token::Fi => {
+                                let e_r = self.parse_expr(0);
+                                Statement::IfThenElseFi(e_l, Box::new(s_l), Box::new(s_r), e_r)
+                            }
+                            Token::End => Statement::IfThenElse(e_l, Box::new(s_l), Box::new(s_r)),
+                            x => panic!("expected fi or end, found {x:?}"),
+                        }
+                    }
+                    x => panic!("expected end, fi or else, bound {x:?}"),
                 }
             }
             Token::From => {
@@ -312,7 +318,15 @@ impl Parser {
             }
             token @ (Token::PushFront | Token::PushBack | Token::PopFront | Token::PopBack) => {
                 self.pop_assert(Token::LParen);
-                let l = self.parse_variable();
+
+                let l = if let Token::Literal(n) = self.seek_front() {
+                    let n = *n;
+                    self.pop_front();
+                    VariableOrLiteral::Literal(n)
+                } else {
+                    VariableOrLiteral::Variable(self.parse_variable())
+                };
+
                 self.pop_assert(Token::Comma);
                 let r = self.parse_variable();
                 self.pop_assert(Token::RParen);

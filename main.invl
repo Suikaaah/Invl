@@ -1,21 +1,26 @@
 invl main()
-    list l = [3, 9]
-    list temp
+    list l = [0, 1, 2, 3, 4, 5, 6, 7]
+    list b
+    call setup(l, b)
 with
-    call swap_front_and_back(l, temp)
-
-invl swap_front_and_back(list l, list perm)
-    call indices(l, perm)
-    swap(perm, 1, size(perm) - 1)
-with
-    call swap_front_and_back_impl(l, perm)
-
-invl swap_front_and_back_impl(list l, const list perm)
-with
-    for ([x, y], [p, q]) in (l[perm], perm)
-        if
-            p = 0 || q = 0
-        then
-            x <=> y
-        end
+    for ([x, y], p) in (l, b)
+        if p then x <=> y end
     end
+
+inj setup(list l, list b)
+    local const int s = size(l)
+        local int i = 0
+            from i = 0
+            loop
+                if i < 2
+                then push_back(1, b)
+                else push_back(0, b)
+                fi i < 2
+                i += 1
+            until i = s
+        delocal int i = s
+
+        swap(l, 1, 2)
+        swap(l, 1, s - 1)
+        swap(l, 3, s - 2)
+    delocal const int s = size(l)

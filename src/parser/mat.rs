@@ -1,4 +1,8 @@
-use std::{fmt::{Debug, Display}, mem, ops::Deref};
+use std::{
+    fmt::{Debug, Display},
+    mem,
+    ops::Deref,
+};
 
 #[derive(Debug)]
 pub struct SquareMat {

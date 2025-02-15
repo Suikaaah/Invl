@@ -86,6 +86,12 @@ pub enum Proc {
     Mat(ProcId, InvlMat),
 }
 
+#[derive(Debug, Clone)]
+pub enum VariableOrLiteral {
+    Variable(Variable),
+    Literal(i32),
+}
+
 #[derive(Debug)]
 pub enum Statement {
     Mut(Variable, MutOp, Expr),
@@ -93,10 +99,10 @@ pub enum Statement {
     IfThenElseFi(Expr, Box<Statement>, Box<Statement>, Expr),
     FromDoLoopUntil(Expr, Box<Statement>, Box<Statement>, Expr),
     IndexedSwap(Variable, Expr, Expr),
-    PushFront(Variable, Variable),
-    PushBack(Variable, Variable),
-    PopFront(Variable, Variable),
-    PopBack(Variable, Variable),
+    PushFront(VariableOrLiteral, Variable),
+    PushBack(VariableOrLiteral, Variable),
+    PopFront(VariableOrLiteral, Variable),
+    PopBack(VariableOrLiteral, Variable),
     LocalDelocal(TypedVariable, Expr, Box<Statement>, TypedVariable, Expr),
     Call(ProcId, LinkedList<Variable>),
     Uncall(ProcId, LinkedList<Variable>),

@@ -1,74 +1,81 @@
 #include "prelude.hpp"
 
-void swap_front_and_back_fwd(List& l, List& perm);
-void swap_front_and_back_rev(List& l, List& perm);
-void swap_front_and_back_impl_fwd(List& l, const List& perm);
-void swap_front_and_back_impl_rev(List& l, const List& perm);
+void setup_fwd(List& l, List& b);
+void setup_rev(List& l, List& b);
 
 int main() {
-    List l = {3, 9};
-    List temp{};
+    List l = {0, 1, 2, 3, 4, 5, 6, 7};
+    List b{};
 
+    setup_fwd(l, b);
 
-    swap_front_and_back_fwd(l, temp);
+    std::size_t i_l{}, i_b{};
+    while (i_l + 1 < l.size() && i_b + 0 < b.size()) {
+        auto& x = index(l, i_l++);
+        auto& y = index(l, i_l++);
+        auto& p = index(b, i_b++);
 
+        if (p) {
+            swap(x, y);
+        }
+    }
+
+    setup_rev(l, b);
 
     print("l", l);
-    print("temp", temp);
+    print("b", b);
 }
 
-void swap_front_and_back_fwd(List& l, List& perm) {
-    indices_fwd(l, perm);
-    swap(index(perm, 1), index(perm, perm.size() - 1));
-
-    swap_front_and_back_impl_fwd(l, perm);
-
-    swap(index(perm, 1), index(perm, perm.size() - 1));
-    indices_rev(l, perm);
-}
-
-void swap_front_and_back_rev(List& l, List& perm) {
-    indices_fwd(l, perm);
-    swap(index(perm, 1), index(perm, perm.size() - 1));
-
-    swap_front_and_back_impl_fwd(l, perm);
-
-    swap(index(perm, 1), index(perm, perm.size() - 1));
-    indices_rev(l, perm);
-}
-
-void swap_front_and_back_impl_fwd(List& l, const List& perm) {
-
-    std::size_t i_l{}, i_perm{};
-    assert_valid_perm(l, perm);
-    while (i_l + 1 < l.size() && i_perm + 1 < perm.size()) {
-        auto& x = index(l, perm[i_l++]);
-        auto& y = index(l, perm[i_l++]);
-        auto& p = index(perm, i_perm++);
-        auto& q = index(perm, i_perm++);
-
-        if (p == 0 || q == 0) {
-            swap(x, y);
-        } else {
+void setup_fwd(List& l, List& b) {
+    {
+        const Int s = l.size();
+        {
+            Int i = 0;
+            assert(i == 0);
+            while (!(i == s)) {
+                if (i < 2) {
+                    b.push_back(1);
+                    assert(i < 2);
+                } else {
+                    b.push_back(0);
+                    assert(!(i < 2));
+                }
+                i += 1;
+                assert(!(i == 0));
+            }
+            assert(i == s);
         }
+        swap(index(l, 1), index(l, 2));
+        swap(index(l, 1), index(l, s - 1));
+        swap(index(l, 3), index(l, s - 2));
+        assert(s == l.size());
     }
-
 }
 
-void swap_front_and_back_impl_rev(List& l, const List& perm) {
-
-    std::size_t i_l{}, i_perm{};
-    assert_valid_perm(l, perm);
-    while (i_l + 1 < l.size() && i_perm + 1 < perm.size()) {
-        auto& x = index(l, perm[i_l++]);
-        auto& y = index(l, perm[i_l++]);
-        auto& p = index(perm, i_perm++);
-        auto& q = index(perm, i_perm++);
-
-        if (p == 0 || q == 0) {
-            swap(x, y);
-        } else {
+void setup_rev(List& l, List& b) {
+    {
+        const Int s = l.size();
+        swap(index(l, 3), index(l, s - 2));
+        swap(index(l, 1), index(l, s - 1));
+        swap(index(l, 1), index(l, 2));
+        {
+            Int i = s;
+            assert(i == s);
+            while (!(i == 0)) {
+                i -= 1;
+                if (i < 2) {
+                    assert(1 == b.back());
+                    b.pop_back();
+                    assert(i < 2);
+                } else {
+                    assert(0 == b.back());
+                    b.pop_back();
+                    assert(!(i < 2));
+                }
+                assert(!(i == s));
+            }
+            assert(i == 0);
         }
+        assert(s == l.size());
     }
-
 }
