@@ -1,26 +1,22 @@
 invl main()
-    list l = [0, 1, 2, 3, 4, 5, 6, 7]
-    list b
-    call setup(l, b)
+    // hello
+    list      target = [72, 101, 108, 108, 111]
+    list      key    = nil
+    const int seed   = 50
+
+    call keygen(seed, key, target)
 with
-    for ([x, y], p) in (l, b)
-        if p then x <=> y end
+    for (t, k) in (target, key)
+        t ^= k
     end
 
-inj setup(list l, list b)
-    local const int s = size(l)
-        local int i = 0
-            from i = 0
-            loop
-                if i < 2
-                then push_back(1, b)
-                else push_back(0, b)
-                fi i < 2
-                i += 1
-            until i = s
-        delocal int i = s
-
-        swap(l, 1, 2)
-        swap(l, 1, s - 1)
-        swap(l, 3, s - 2)
-    delocal const int s = size(l)
+inj keygen(const int seed, list key, const list target)
+    local int i = 0
+        from i = 0
+        loop
+            local int j = (i + seed) % 255
+                push_front(j, key)
+            delocal int j = 0
+            i += 1
+        until i = size(target)
+    delocal int i = size(target)

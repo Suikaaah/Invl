@@ -22,7 +22,9 @@ impl Tokenizer {
                 if i == 0 {
                     x.to_string()
                 } else {
-                    x.lines().skip(1).collect::<String>()
+                    x.lines()
+                        .skip(1)
+                        .fold(String::new(), |acc, x| format!("{acc}\n{x}"))
                 }
             })
             .collect();

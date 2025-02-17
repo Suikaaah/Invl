@@ -69,7 +69,7 @@ impl ProcId {
 #[derive(Debug)]
 pub struct Program(pub MainProc, pub LinkedList<Proc>);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TypedVariable(pub Type, pub Variable);
 
 #[derive(Debug)]

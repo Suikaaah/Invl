@@ -348,6 +348,7 @@ impl Parser {
                 let tx_r = self.parse_typed_variable();
                 self.pop_assert(Token::Equal);
                 let e_r = self.parse_expr(0);
+                assert_eq!(tx_l, tx_r);
                 Statement::LocalDelocal(tx_l, e_l, Box::new(s), tx_r, e_r)
             }
             token @ (Token::Call | Token::Uncall) => {
