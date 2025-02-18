@@ -5,7 +5,7 @@ void keygen_rev(const Int& seed, List& key, const List& target);
 
 int main() {
     List target = {72, 101, 108, 108, 111};
-    List key = List{};
+    List key = {};
     const Int seed = 50;
 
     keygen_fwd(seed, key, target);

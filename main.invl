@@ -1,7 +1,7 @@
 invl main()
     // hello
     list      target = [72, 101, 108, 108, 111]
-    list      key    = nil
+    list      key    = []
     const int seed   = 50
 
     call keygen(seed, key, target)
