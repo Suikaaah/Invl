@@ -1,4 +1,4 @@
-use crate::parser::{mat::InvlMat, r#for::For};
+use crate::parser::{r#for::For, mat::InvlMat};
 use std::{collections::LinkedList, rc::Rc};
 
 #[derive(Debug, Clone, Copy, PartialEq)]

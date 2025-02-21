@@ -7,11 +7,11 @@ use crate::{
         Expr, MainProc, MutOp, Proc, ProcId, Program, Statement, Type, TypedVariable, UnrOp,
         Variable,
     },
-    tokenizer::{detail::Token, TokenList},
+    tokenizer::{TokenList, detail::Token},
 };
 use detail::{Direction, InnerType, VariableOrLiteral};
-use mat::InvlMat;
 use r#for::For;
+use mat::InvlMat;
 use std::{collections::LinkedList, rc::Rc};
 
 #[derive(Debug)]

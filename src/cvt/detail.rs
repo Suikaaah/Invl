@@ -62,11 +62,8 @@ where
     I: IntoIterator<Item = T>,
     F: FnMut(T) -> String,
 {
-    let mut buf = String::new();
     let mut d = "";
-    for x in list {
-        buf += mem::replace(&mut d, delim);
-        buf += &converter(x);
-    }
-    buf
+    list.into_iter().fold(String::new(), |acc, x| {
+        acc + mem::replace(&mut d, delim) + &converter(x)
+    })
 }

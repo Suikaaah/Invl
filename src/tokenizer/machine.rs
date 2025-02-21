@@ -1,9 +1,8 @@
 use crate::tokenizer::{
-    detail::{IsSymbol, Token, TokenType},
     CharList, TokenList,
+    detail::{IsSymbol, Token, TokenType},
 };
-use lazy_static::lazy_static;
-use std::collections::BTreeMap;
+use std::{cell::LazyCell, collections::BTreeMap};
 
 #[derive(Debug, Default)]
 pub struct Machine {
@@ -13,73 +12,71 @@ pub struct Machine {
 
 impl Machine {
     pub fn process_word(mut self) -> Self {
-        lazy_static! {
-            static ref table: BTreeMap<CharList, Token> = {
-                let mut retval = BTreeMap::new();
-                let mut push = |x: &str, t: Token| retval.insert(x.chars().collect(), t);
-                push("[", Token::LBracket);
-                push("]", Token::RBracket);
-                push("(", Token::LParen);
-                push(")", Token::RParen);
-                push("int", Token::Int);
-                push("list", Token::List);
-                push("array", Token::Array);
-                push("invl", Token::Invl);
-                push("inj", Token::Inj);
-                push("main", Token::Main);
-                push("+", Token::Plus);
-                push("-", Token::Minus);
-                push("^", Token::Caret);
-                push("+=", Token::PlusEqual);
-                push("-=", Token::MinusEqual);
-                push("^=", Token::CaretEqual);
-                push("*", Token::Asterisk);
-                push("/", Token::Slash);
-                push("%", Token::Percent);
-                push("&", Token::Ampersand);
-                push("|", Token::VerticalBar);
-                push("&&", Token::DoubleAmpersand);
-                push("||", Token::DoubleVerticalBar);
-                push("<", Token::LAngleBracket);
-                push(">", Token::RAngleBracket);
-                push("=", Token::Equal);
-                push("!=", Token::ExclamationEqual);
-                push("<=", Token::LAngleBracketEqual);
-                push(">=", Token::RAngleBracketEqual);
-                push("<=>", Token::Spaceship);
-                push("if", Token::If);
-                push("then", Token::Then);
-                push("else", Token::Else);
-                push("fi", Token::Fi);
-                push("from", Token::From);
-                push("do", Token::Do);
-                push("loop", Token::Loop);
-                push("until", Token::Until);
-                push("push_front", Token::PushFront);
-                push("push_back", Token::PushBack);
-                push("pop_front", Token::PopFront);
-                push("pop_back", Token::PopBack);
-                push("local", Token::Local);
-                push("delocal", Token::Delocal);
-                push("call", Token::Call);
-                push("uncall", Token::Uncall);
-                push("skip", Token::Skip);
-                push("empty", Token::Empty);
-                push("!", Token::Exclamation);
-                push(",", Token::Comma);
-                push("nil", Token::Nil);
-                push("size", Token::Size);
-                push("print", Token::Print);
-                push("with", Token::With);
-                push(";", Token::Semicolon);
-                push("for", Token::For);
-                push("in", Token::In);
-                push("end", Token::End);
-                push("const", Token::Const);
-                push("swap", Token::Swap);
-                retval
-            };
-        }
+        let table = LazyCell::new(|| {
+            let mut retval: BTreeMap<CharList, Token> = BTreeMap::new();
+            let mut push = |x: &str, t: Token| retval.insert(x.chars().collect(), t);
+            push("[", Token::LBracket);
+            push("]", Token::RBracket);
+            push("(", Token::LParen);
+            push(")", Token::RParen);
+            push("int", Token::Int);
+            push("list", Token::List);
+            push("array", Token::Array);
+            push("invl", Token::Invl);
+            push("inj", Token::Inj);
+            push("main", Token::Main);
+            push("+", Token::Plus);
+            push("-", Token::Minus);
+            push("^", Token::Caret);
+            push("+=", Token::PlusEqual);
+            push("-=", Token::MinusEqual);
+            push("^=", Token::CaretEqual);
+            push("*", Token::Asterisk);
+            push("/", Token::Slash);
+            push("%", Token::Percent);
+            push("&", Token::Ampersand);
+            push("|", Token::VerticalBar);
+            push("&&", Token::DoubleAmpersand);
+            push("||", Token::DoubleVerticalBar);
+            push("<", Token::LAngleBracket);
+            push(">", Token::RAngleBracket);
+            push("=", Token::Equal);
+            push("!=", Token::ExclamationEqual);
+            push("<=", Token::LAngleBracketEqual);
+            push(">=", Token::RAngleBracketEqual);
+            push("<=>", Token::Spaceship);
+            push("if", Token::If);
+            push("then", Token::Then);
+            push("else", Token::Else);
+            push("fi", Token::Fi);
+            push("from", Token::From);
+            push("do", Token::Do);
+            push("loop", Token::Loop);
+            push("until", Token::Until);
+            push("push_front", Token::PushFront);
+            push("push_back", Token::PushBack);
+            push("pop_front", Token::PopFront);
+            push("pop_back", Token::PopBack);
+            push("local", Token::Local);
+            push("delocal", Token::Delocal);
+            push("call", Token::Call);
+            push("uncall", Token::Uncall);
+            push("skip", Token::Skip);
+            push("empty", Token::Empty);
+            push("!", Token::Exclamation);
+            push(",", Token::Comma);
+            push("nil", Token::Nil);
+            push("size", Token::Size);
+            push("print", Token::Print);
+            push("with", Token::With);
+            push(";", Token::Semicolon);
+            push("for", Token::For);
+            push("in", Token::In);
+            push("end", Token::End);
+            push("const", Token::Const);
+            push("swap", Token::Swap);
+            retval
+        });
 
         if self.word.is_empty() {
             return self;

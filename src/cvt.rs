@@ -7,7 +7,7 @@ use crate::parser::{
     },
     r#for::For,
 };
-use detail::{concat, Flip};
+use detail::{Flip, concat};
 use std::mem;
 
 const INDENT_WIDTH: usize = 4;
@@ -271,7 +271,9 @@ impl CvtInd for Statement {
         match self {
             Self::Mut(x, op, e) => spaces + &op.cvt_mut_op(&x.cvt(), &e.cvt()) + "\n",
             Self::IndexedMut(x, i, op, e) => {
-                spaces + &op.cvt_mut_op(&format!("index({}, {})", x.cvt(), i.cvt()), &e.cvt()) + "\n"
+                spaces
+                    + &op.cvt_mut_op(&format!("index({}, {})", x.cvt(), i.cvt()), &e.cvt())
+                    + "\n"
             }
             Self::IfThenElseFi(e_l, s_l, s_r, e_r) => format!(
                 "{spaces}if ({0}) {{\n{1}{more_spaces}assert({3});\n{spaces}}} else {{\n{2}{more_spaces}assert(!({3}));\n{spaces}}}\n",
@@ -290,20 +292,44 @@ impl CvtInd for Statement {
             ),
             Self::PushFront(l, r) => match l {
                 VariableOrLiteral::Literal(n) => format!("{spaces}{}.push_front({n});\n", r.cvt()),
-                VariableOrLiteral::Variable(x) => format!("{spaces}{0}.push_front({1});\n{spaces}{1} = 0;\n", r.cvt(), x.cvt()),
-            }
+                VariableOrLiteral::Variable(x) => format!(
+                    "{spaces}{0}.push_front({1});\n{spaces}{1} = 0;\n",
+                    r.cvt(),
+                    x.cvt()
+                ),
+            },
             Self::PushBack(l, r) => match l {
                 VariableOrLiteral::Literal(n) => format!("{spaces}{}.push_back({n});\n", r.cvt()),
-                VariableOrLiteral::Variable(x) => format!("{spaces}{0}.push_back({1});\n{spaces}{1} = 0;\n", r.cvt(), x.cvt()),
-            }
+                VariableOrLiteral::Variable(x) => format!(
+                    "{spaces}{0}.push_back({1});\n{spaces}{1} = 0;\n",
+                    r.cvt(),
+                    x.cvt()
+                ),
+            },
             Self::PopFront(l, r) => match l {
-                VariableOrLiteral::Literal(n) => format!("{spaces}assert({1} == {0}.front());\n{spaces}{0}.pop_front();\n", r.cvt(), n),
-                VariableOrLiteral::Variable(x) => format!("{spaces}assert({1} == 0);\n{spaces}{1} = {0}.front();\n{spaces}{0}.pop_front();\n", r.cvt(), x.cvt()),
-            }
+                VariableOrLiteral::Literal(n) => format!(
+                    "{spaces}assert({1} == {0}.front());\n{spaces}{0}.pop_front();\n",
+                    r.cvt(),
+                    n
+                ),
+                VariableOrLiteral::Variable(x) => format!(
+                    "{spaces}assert({1} == 0);\n{spaces}{1} = {0}.front();\n{spaces}{0}.pop_front();\n",
+                    r.cvt(),
+                    x.cvt()
+                ),
+            },
             Self::PopBack(l, r) => match l {
-                VariableOrLiteral::Literal(n) => format!("{spaces}assert({1} == {0}.back());\n{spaces}{0}.pop_back();\n", r.cvt(), n),
-                VariableOrLiteral::Variable(x) => format!("{spaces}assert({1} == 0);\n{spaces}{1} = {0}.back();\n{spaces}{0}.pop_back();\n", r.cvt(), x.cvt()),
-            }
+                VariableOrLiteral::Literal(n) => format!(
+                    "{spaces}assert({1} == {0}.back());\n{spaces}{0}.pop_back();\n",
+                    r.cvt(),
+                    n
+                ),
+                VariableOrLiteral::Variable(x) => format!(
+                    "{spaces}assert({1} == 0);\n{spaces}{1} = {0}.back();\n{spaces}{0}.pop_back();\n",
+                    r.cvt(),
+                    x.cvt()
+                ),
+            },
             Self::IndexedSwap(x, l, r) => format!(
                 "{spaces}swap(index({0}, {1}), index({0}, {2}));\n",
                 x.cvt(),
@@ -331,9 +357,12 @@ impl CvtInd for Statement {
             }
             Self::Skip => String::new(),
             Self::Print(x) => format!("{spaces}print(\"{0}\", {0});\n", x.0),
-            Self::For(For{vars, containers, statement}) => {
-                let mut buf =
-                    format!("{spaces}std::size_t ")
+            Self::For(For {
+                vars,
+                containers,
+                statement,
+            }) => {
+                let mut buf = format!("{spaces}std::size_t ")
                     + &concat(containers, ", ", |(x, _)| format!("i_{}{{}}", x.0))
                     + ";\n";
 
@@ -343,13 +372,11 @@ impl CvtInd for Statement {
                         None => continue,
                     };
 
-                    buf += &format!(
-                        "{spaces}assert_valid_perm({}, {});\n",
-                        x.0, i.0
-                    );
+                    buf += &format!("{spaces}assert_valid_perm({}, {});\n", x.0, i.0);
                 }
 
-                buf += &format!("{spaces}while ({}) {{\n",
+                buf += &format!(
+                    "{spaces}while ({}) {{\n",
                     concat(containers.iter().zip(vars), " && ", |((x, _), v)| {
                         format!("i_{0} + {1} < {0}.size()", x.0, v.len() - 1)
                     })
@@ -362,10 +389,7 @@ impl CvtInd for Statement {
                     };
 
                     for v in vs {
-                        buf += &format!(
-                            "{more_spaces}auto& {} = index({}, {});\n",
-                            v.0, x.0, i
-                        );
+                        buf += &format!("{more_spaces}auto& {} = index({}, {});\n", v.0, x.0, i);
                     }
                 }
 
@@ -373,19 +397,21 @@ impl CvtInd for Statement {
                 buf += &format!("{spaces}}}\n");
                 buf
             }
-            Self::IfThenElse(e, s_l, s_r) => if let Statement::Skip = s_r.as_ref() {
-                format!(
-                    "{spaces}if ({}) {{\n{}{spaces}}}\n",
-                    e.cvt(),
-                    s_l.cvt_ind(depth + 1),
-                )
-            } else {
-                format!(
-                    "{spaces}if ({}) {{\n{}{spaces}}} else {{\n{}{spaces}}}\n",
-                    e.cvt(),
-                    s_l.cvt_ind(depth + 1),
-                    s_r.cvt_ind(depth + 1),
-                )
+            Self::IfThenElse(e, s_l, s_r) => {
+                if let Statement::Skip = s_r.as_ref() {
+                    format!(
+                        "{spaces}if ({}) {{\n{}{spaces}}}\n",
+                        e.cvt(),
+                        s_l.cvt_ind(depth + 1),
+                    )
+                } else {
+                    format!(
+                        "{spaces}if ({}) {{\n{}{spaces}}} else {{\n{}{spaces}}}\n",
+                        e.cvt(),
+                        s_l.cvt_ind(depth + 1),
+                        s_r.cvt_ind(depth + 1),
+                    )
+                }
             }
             Self::Sequence(l, r) => format!("{}{}", l.cvt_ind(depth), r.cvt_ind(depth)),
         }
