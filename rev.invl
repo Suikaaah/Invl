@@ -1,17 +1,23 @@
 invl main()
-    list l = [35, 254, 9]
+    list l = [1, 2, 3, 4, 5]
     int parity = 0
     
     local const int s = size(l)
-        local int i = 0
-            from i = 0
-            loop
-                if parity & 1
-                then swap(l, i, s - 1 - i)
-                fi parity & 1
-                i += 1
-            until i = s / 2
-        delocal int i = s / 2
+        if s != 0
+        then call rev_impl(l, parity, s)
+        fi s != 0
     delocal const int s = size(l)
 with
     parity ^= 1
+
+inj rev_impl(list l, int parity, const int s)
+    local int i = 0
+        from i = 0
+        loop
+            if parity & 1
+            then swap(l, i, s - 1 - i)
+            fi parity & 1
+            i += 1
+        until i = s / 2
+    delocal int i = s / 2
+
