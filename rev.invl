@@ -1,0 +1,17 @@
+invl main()
+    list l = [35, 254, 9]
+    int parity = 0
+    
+    local const int s = size(l)
+        local int i = 0
+            from i = 0
+            loop
+                if parity & 1
+                then swap(l, i, s - 1 - i)
+                fi parity & 1
+                i += 1
+            until i = s / 2
+        delocal int i = s / 2
+    delocal const int s = size(l)
+with
+    parity ^= 1

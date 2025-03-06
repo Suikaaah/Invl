@@ -1,6 +1,6 @@
 # Invl
 ## About
-- Converts main.invl into main.cpp
+- Converts *.invl into main.cpp
 ## Usage
-- `cargo run`
+- `cargo run -- <filename>`
 - Compile main.cpp with C++23 (requires boost::multiprecision)
